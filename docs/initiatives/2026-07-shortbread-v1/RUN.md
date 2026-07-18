@@ -32,10 +32,10 @@
 
 ## Execution State
 
-- **Reconciled 2026-07-18:** `main`, `origin/main`, and the only local worktree all point to `3c1fc1b655a407d369a6f258af5e3cec33b7be0d`; the worktree is clean; no implementation branch or pull request exists.
-- **Tracker:** #1–#17 are open, #2 alone has `ready-for-agent`, and no issue is assigned. The published #2 body matches the canonical T01 ticket.
-- **Frontier:** #2, “Publish, invite, and view one private page locally.”
-- **Dependency state:** the approved baseline is not yet scaffolded or frozen. #2 begins with the mandatory controller-owned dependency-bootstrap checkpoint before its end-to-end tracer.
+- **Reconciled 2026-07-18:** kickoff `main`/`origin/main` was clean at `3c1fc1b655a407d369a6f258af5e3cec33b7be0d`, with no implementation branches, worktrees, or pull requests; the execution-start transition is published at `412be84d441325c5e61004da87ec6878e588d7b4`.
+- **Tracker:** #1–#17 are open; #2 alone has `ready-for-agent`, its published body matches canonical T01, and it is assigned to `ZempTime`.
+- **Claim:** #2, “Publish, invite, and view one private page locally,” on branch `ticket-2-walking-skeleton` in `/private/tmp/shortbread-ticket-2`, pinned to baseline `412be84d441325c5e61004da87ec6878e588d7b4`.
+- **Dependency state:** the approved baseline is being established in #2's mandatory controller-owned dependency-bootstrap checkpoint. Dependency manifests, lockfiles, and tool pins remain unfrozen until its audit and checkpoint commit pass controller inspection.
 - **External input:** no credential or deployment value is requested during implementation; the consolidated credential ceremony remains owned by #17.
 
 ## Authority Envelope
