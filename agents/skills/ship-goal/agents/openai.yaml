@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ship Goal"
+  short_description: "Drive an approved goal through evidenced delivery"
+  default_prompt: "Use $ship-goal as the sole top-level controller for an approved PRD and ticket graph, coordinating parallel implementation, review, repair, integration, and harvest to terminal evidence."

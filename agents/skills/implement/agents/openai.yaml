@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implement"
+  short_description: "Ship one bounded ticket with TDD and evidence"
+  default_prompt: "Use $implement to deliver one unblocked ticket through a minimal MWP workspace, behavioral TDD, verification, review, and harvest."

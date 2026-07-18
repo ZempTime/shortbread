@@ -1,0 +1,4 @@
+interface:
+  display_name: "To Spec"
+  short_description: "Turn settled decisions into a canonical tracked PRD"
+  default_prompt: "Use $to-spec to synthesize the accepted conversation and repository decisions into a canonical local PRD and coordinating parent issue."

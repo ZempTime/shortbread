@@ -1,0 +1,13 @@
+[tools]
+ruby = "3.4.8"
+node = "24.7.0"
+go = "1.26.2"
+aube = "1.25.2"
+fnox = "1.28.0"
+hk = "1.49.0"
+postgres = "17.5"
+"ubi:anycable/anycable[exe=anycable-go]" = "1.6.15"
+
+# Application, CLI, database, test, lint, typecheck, and release tasks are added
+# by the first vertical tracer alongside the files they execute. Tool versions
+# are front-loaded here; credentials and deployment secrets never belong in mise.

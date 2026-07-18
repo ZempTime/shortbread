@@ -1,0 +1,5 @@
+interface:
+  display_name: "Fix and PR"
+  short_description: "Diagnosed bug → reviewed controller handoff"
+policy:
+  allow_implicit_invocation: false

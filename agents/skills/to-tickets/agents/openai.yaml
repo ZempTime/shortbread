@@ -1,0 +1,4 @@
+interface:
+  display_name: "To Tickets"
+  short_description: "Build an executable dependency graph of tracer tickets"
+  default_prompt: "Use $to-tickets to turn the accepted PRD into reviewed vertical tracer tickets with explicit blocking edges and coverage."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Review"
+  short_description: "Review a change against standards and its specification"
+  default_prompt: "Use $code-review to run independent Standards and Spec reviews from a fixed baseline and return actionable blocking findings."

@@ -1,0 +1,3 @@
+# Reference stack with portable provider seams
+
+Shortbread uses Rails 8.1 with Inertia, React, and TypeScript for the application, PostgreSQL for records, an S3-compatible private object store for Blobs, and a Go single-binary CLI. The supported reference deployment is Northflank, PlanetScale Postgres, and Cloudflare R2, automated so an Operator supplies credentials and deployment values rather than manually constructing resources; standard HTTP, PostgreSQL, S3, containers, and DNS boundaries keep self-hosting and compatible-provider substitution possible without introducing proprietary application dependencies.

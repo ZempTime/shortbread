@@ -1,0 +1,24 @@
+.DS_Store
+
+# Local environment values. Commit examples, never populated variants.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Rails credential decryption keys. Encrypted credential files may be committed.
+config/master.key
+config/credentials/*.key
+
+# Local secret-tool state. Keep shared mise.toml and documented non-secret fnox config visible.
+.mise.local.toml
+mise.local.toml
+.fnox.local.*
+fnox.local.*
+.fnox/
+
+# Generated local credential handoffs. Commit sanitized example files instead.
+*.credentials.local
+*.secrets.local
+/credentials.local/
+/secrets.local/

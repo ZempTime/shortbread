@@ -1,0 +1,3 @@
+# Front-load and then freeze the dependency baseline
+
+The first implementation tracer establishes and audits the complete Ruby, JavaScript, Go, and toolchain baseline in one controller-owned change, borrowing the generic kit already proven in the template application. After its lockfiles are committed, implementation agents use the baseline instead of adding packages; only the controller may approve a narrowly justified open-source exception after checking license, maintenance, security, build scripts, and existing alternatives. Small shadcn component source additions are expected and do not count as a new dependency unless they add a package.
