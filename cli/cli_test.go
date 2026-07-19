@@ -6,7 +6,7 @@ import (
 )
 
 func TestBinaryReportsItsVersion(t *testing.T) {
-	command := exec.Command("go", "run", "./cmd/shortbread", "--version")
+	command := exec.Command("go", "run", "-mod=readonly", "./cmd/shortbread", "--version")
 	output, err := command.CombinedOutput()
 	if err != nil {
 		t.Fatalf("shortbread --version failed: %v\n%s", err, output)

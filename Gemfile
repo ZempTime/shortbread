@@ -2,16 +2,16 @@ source "https://rubygems.org"
 
 ruby "3.4.8"
 
-gem "anycable-rails-core", "~> 1.6.2"
-gem "aws-sdk-s3", "~> 1.226.0"
-gem "bootsnap", "~> 1.24.6", require: false
-gem "inertia_rails", "~> 3.21.2"
+gem "anycable-rails-core", "~> 1.6"
+gem "aws-sdk-s3", "~> 1.226"
+gem "bootsnap", "~> 1.24", require: false
+gem "inertia_rails", "~> 3.21"
 gem "pg", "~> 1.1"
-gem "pitchfork", "~> 0.18.2"
+gem "pitchfork", "~> 0.18"
 gem "rails", "~> 8.1.3"
-gem "solid_queue", "~> 1.4.0"
-gem "vite_rails", "~> 3.11.0"
-gem "webauthn", "~> 3.4.3"
+gem "solid_queue", "~> 1.2"
+gem "vite_rails", "~> 3.11"
+gem "webauthn", "~> 3.4"
 
 gem "tzinfo-data", platforms: %i[jruby windows]
 

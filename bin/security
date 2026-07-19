@@ -1,8 +1,21 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ruby -S bundle exec bundle-audit check
+bin/bundler-audit update
+bin/bundler-audit check
 aube audit --audit-level low
+ignored_builds=$(aube ignored-builds --no-color)
+printf '%s\n' "$ignored_builds"
+if [[ "$ignored_builds" != "No ignored builds." ]]; then
+  echo "Unreviewed browser dependency build scripts are forbidden" >&2
+  exit 1
+fi
+bin/licenses
 ruby script/check_dependency_policy.rb
-fnox --non-interactive scan --ignore '.git/**' --ignore 'tmp/**' --ignore 'node_modules/**' .
-(cd cli && go vet ./...)
+fnox --config fnox.toml --non-interactive scan --quiet --ignore '.git/**' --ignore 'tmp/**' --ignore 'node_modules/**' --ignore 'anycable.toml' .
+(
+  cd cli
+  go mod tidy -diff
+  go mod verify
+  go vet -mod=readonly ./...
+)

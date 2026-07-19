@@ -22,7 +22,8 @@ start_postgres() {
   fi
 
   if ! pg_ctl -D "$data_dir" status >/dev/null 2>&1; then
-    pg_ctl -D "$data_dir" -l "$log_file" -o "-k $socket_dir -p $port" -w start
+    printf -v postgres_options -- '-k %q -p %q' "$socket_dir" "$port"
+    pg_ctl -D "$data_dir" -l "$log_file" -o "$postgres_options" -w start
   fi
 }
 

@@ -8,7 +8,7 @@ Shortbread hosts, gates, and collects. It never builds Bundle content and never 
 
 ## Status
 
-Implementation has not started. The product and delivery control plane are ready for a fresh autonomous controller run:
+The dependency bootstrap is in progress; product behavior has not started. The product and delivery control plane are ready for the autonomous controller run:
 
 - [accepted v1 PRD](docs/initiatives/2026-07-shortbread-v1/01_spec/output/2026-07-18-shortbread-v1-prd.md) — [GitHub #1](https://github.com/ZempTime/shortbread/issues/1)
 - [tracer-ticket graph](docs/initiatives/2026-07-shortbread-v1/02_ticket_map/output/2026-07-18-ticket-map.md) — initial frontier [GitHub #2](https://github.com/ZempTime/shortbread/issues/2)
@@ -16,6 +16,20 @@ Implementation has not started. The product and delivery control plane are ready
 - [front-loaded dependency baseline](docs/initiatives/2026-07-shortbread-v1/03_goal_handoff/output/dependency-baseline.md)
 
 The v1 build includes the web app, remote-authenticating Go CLI, credential-driven reference deployment, clean-clone setup/operations guides, released artifacts, a synthetic example Site, and screenshots captured repeatably from the real app.
+
+## Development bootstrap
+
+After cloning, explicitly trust this repository's checked-in mise configuration, install the pinned tools, and run the one setup task:
+
+```sh
+mise trust mise.toml
+mise install
+mise run setup
+```
+
+`mise.lock` supplies verified download URLs and checksums wherever the selected backend publishes them. In a clean-room POSIX environment, `MISE_GLOBAL_CONFIG_FILE=/dev/null mise install` limits installation to this repository instead of also installing tools from a personal global mise config. The public task graph currently supports POSIX systems and Windows through WSL; Windows lock entries provide artifact coverage but do not claim native `cmd.exe` compatibility.
+
+`mise run setup` enters Bundler through the pinned Ruby with frozen-lock enforcement, installs the frozen Ruby, browser, and Go dependency graphs, and prepares repository-local PostgreSQL databases. It does not create product data or credentials. The conventional root `Gemfile` and `Gemfile.lock` remain the single Ruby dependency contract; there is no separate duplicate `mise bundle` task. Run `mise tasks` to see the public development, test, build, lint, typecheck, security, license, and bootstrap-check commands.
 
 ## Trust contract
 

@@ -11,4 +11,4 @@ if [[ -n "$unformatted" ]]; then
   exit 1
 fi
 
-(cd cli && go vet ./...)
+(cd cli && go vet -mod=readonly ./...)
