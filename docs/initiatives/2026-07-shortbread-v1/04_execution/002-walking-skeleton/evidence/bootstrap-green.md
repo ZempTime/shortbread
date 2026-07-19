@@ -10,7 +10,7 @@ mise all tools are installed
 exit 0
 ```
 
-The repaired inventory is mise 2026.7.7 (repository minimum 2026.7.1), Ruby 3.4.10, Node 24.18.0, Go 1.26.5, Aube 1.29.1, fnox 1.28.0, GoReleaser 2.17.0, hk 1.49.0, PostgreSQL 17.10, and AnyCable Go 1.6.15. Ruby reported zlib gem 3.2.3. The normalized `mise.lock` remained byte-identical after installation and contains 54 checksum records and 20 GitHub-attestation records.
+The repaired inventory is mise 2026.7.7 (repository minimum 2026.7.1), Ruby 3.4.10, Node 24.18.0, Go 1.26.5, Aube 1.29.1, fnox 1.28.0, GoReleaser 2.17.0, hk 1.49.0, PostgreSQL 17.10, and AnyCable Go 1.6.15. Ruby reported zlib gem 3.2.3, and `mise settings get use_versions_host_track` reported `false`. The normalized `mise.lock` remained byte-identical after installation and contains 54 checksum records and 20 GitHub-attestation records.
 
 ## Post-repair frozen setup
 
@@ -72,7 +72,7 @@ exit 0
 
 The license command's full output additionally records 40 exact/pattern-bounded native/WASM metadata exceptions. The Vite builds reported the same non-fatal `@inertiajs/vite` source-map warning as the pre-review build.
 
-Finally, `mise exec -- bin/ci` exercised the checked-in composition—Setup, Bootstrap, Lint, Typecheck, Security, Tests, and Build—and all seven steps passed in 15.53 seconds.
+Finally, `mise exec -- bin/ci` exercised the checked-in composition—Setup, Bootstrap, Lint, Typecheck, Security, Tests, and Build—and all seven steps passed after the telemetry-setting repair in 15.69 seconds.
 
 The URL-only Action Cable helper was rendered directly through Rails and produced `<meta name="action-cable-url" content="ws://localhost:8080/cable" />`; an assertion rejected `jid`, JWT, or token query parameters.
 

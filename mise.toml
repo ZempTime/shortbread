@@ -13,6 +13,7 @@ postgres = "17.10"
 
 [settings]
 activate_aggressive = true
+use_versions_host_track = false
 
 [tasks.setup]
 description = "Install dependencies and prepare local databases"
