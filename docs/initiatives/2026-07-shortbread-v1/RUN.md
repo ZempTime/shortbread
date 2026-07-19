@@ -11,7 +11,7 @@
 | External authority | Configure the GitHub issue tracker; create and update PRD/ticket issues; use branches, commits, pull requests, and releases inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
 | State token | `execution-active` |
-| Current state | Execution started from published SHA `3c1fc1b`; local and GitHub state reconciled; #2 is the only unblocked frontier ticket |
+| Current state | #2 remains the only unblocked frontier ticket; its dependency phase is frozen at `3c40a67` and its publish/invite/view tracer is in implementation |
 
 ## Input Snapshot
 
@@ -28,6 +28,7 @@
 | 01 Spec | Complete | [Canonical PRD](01_spec/output/2026-07-18-shortbread-v1-prd.md) published as [GitHub #1](https://github.com/ZempTime/shortbread/issues/1) |
 | 02 Ticket map | Complete | [Reviewed graph](02_ticket_map/output/2026-07-18-ticket-map.md) published as [GitHub #2–#17](02_ticket_map/output/tracker.md); #2 is the initial frontier |
 | 03 Goal handoff | Complete | [Persistent goal](03_goal_handoff/output/GOAL.md), controller runbook, dependency baseline, and [temporary-handoff lifecycle](03_goal_handoff/output/handoff.md) exist |
+| 04 Execution | In progress | #2 phase-one dependency freeze approved at `3c40a67`; phase-two behavioral tracer active |
 | 99 Harvest | Complete for setup | [Setup harvest](99_harvest/output/2026-07-18-goal-setup-harvest.md); implementation tickets repeat the decision |
 
 ## Execution State
@@ -35,7 +36,7 @@
 - **Reconciled 2026-07-18:** `main`, `origin/main`, and the only local worktree all point to `3c1fc1b655a407d369a6f258af5e3cec33b7be0d`; the worktree is clean; no implementation branch or pull request exists.
 - **Tracker:** #1–#17 are open, #2 alone has `ready-for-agent`, and no issue is assigned. The published #2 body matches the canonical T01 ticket.
 - **Frontier:** #2, “Publish, invite, and view one private page locally.”
-- **Dependency state:** the approved baseline is not yet scaffolded or frozen. #2 begins with the mandatory controller-owned dependency-bootstrap checkpoint before its end-to-end tracer.
+- **Dependency state:** the approved baseline is scaffolded, audited, frozen, and independently approved at `3c40a67`; manifests and lockfiles are now controller-only exception surfaces.
 - **External input:** no credential or deployment value is requested during implementation; the consolidated credential ceremony remains owned by #17.
 
 ## Authority Envelope
