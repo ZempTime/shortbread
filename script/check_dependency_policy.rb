@@ -134,11 +134,17 @@ postgres_revision, _, revision_status = Open3.capture3(
 postgres_origin, _, origin_status = Open3.capture3(
   "git", "-C", postgres_plugin.to_s, "remote", "get-url", "origin"
 )
+postgres_changes, _, changes_status = Open3.capture3(
+  "git", "-C", postgres_plugin.to_s, "status", "--porcelain", "--untracked-files=all"
+)
 unless revision_status.success? && postgres_revision.strip == POSTGRES_PLUGIN_REVISION
   abort "Installed PostgreSQL plugin does not match the approved revision"
 end
 unless origin_status.success? && postgres_origin.strip == POSTGRES_PLUGIN_REPOSITORY
   abort "Installed PostgreSQL plugin does not match the approved repository"
+end
+unless changes_status.success? && postgres_changes.empty?
+  abort "Installed PostgreSQL plugin contains unreviewed local changes"
 end
 
 mise_source = ROOT.join("mise.toml").read

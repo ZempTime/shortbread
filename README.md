@@ -19,15 +19,16 @@ The v1 build includes the web app, remote-authenticating Go CLI, credential-driv
 
 ## Development bootstrap
 
-After cloning, explicitly trust this repository's checked-in mise configuration, install the pinned tools, and run the one setup task:
+After cloning, explicitly trust this repository's checked-in mise configuration, then run the system-shell bootstrap seam:
 
 ```sh
 mise trust mise.toml
-mise install
-mise run setup
+bin/bootstrap
 ```
 
-`mise.lock` supplies verified download URLs and checksums wherever the selected backend publishes them. In a clean-room environment, `MISE_GLOBAL_CONFIG_FILE=/dev/null mise install` limits installation to this repository instead of also installing tools from a personal global mise config. This checkpoint exercises the task graph on macOS arm64. The lock also inventories Linux arm64/x64 and Windows artifacts where upstream publishes them, but those entries are download coverage rather than claims of an exercised host or native `cmd.exe` compatibility.
+`bin/bootstrap` checks any already-cached PostgreSQL installer plugin's origin, exact revision, and clean tree before mise can execute it. It then installs only this repository's pinned tools with the personal global mise config disabled and runs `mise run setup`. A missing plugin is installed from the commit-pinned source in `mise.toml`.
+
+`mise.lock` supplies verified download URLs and checksums wherever the selected backend publishes them. This checkpoint exercises the task graph on macOS arm64. The lock also inventories Linux arm64/x64 and Windows artifacts where upstream publishes them, but those entries are download coverage rather than claims of an exercised host or native `cmd.exe` compatibility.
 
 `mise run setup` enters Bundler through the pinned Ruby with frozen-lock enforcement, installs the frozen Ruby, browser, and Go dependency graphs, and prepares repository-local PostgreSQL databases. It does not create product data or credentials. The conventional root `Gemfile` and `Gemfile.lock` remain the single Ruby dependency contract; there is no separate duplicate `mise bundle` task. Run `mise tasks` to see the public development, test, build, lint, typecheck, security, license, and bootstrap-check commands.
 

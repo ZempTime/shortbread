@@ -2,17 +2,26 @@
 
 Observed on 2026-07-19 from the ticket worktree on macOS arm64. Product routes and records were still absent; this checkpoint exercises only the dependency/bootstrap seams. Review required runtime, package-manager, and development-transport repairs after commit `914ddd6`; fresh post-repair evidence is recorded first, followed by the explicitly historical pre-review baseline.
 
-## Post-repair repository-only tool resolution
+## Post-repair repository-only bootstrap
 
 ```text
-$ MISE_GLOBAL_CONFIG_FILE=/dev/null mise install
+$ bin/bootstrap
+PostgreSQL installer preflight: approved origin, revision, and clean tree
 mise all tools are installed
+== Verifying approved dependency inventory ==
+Dependency policy: approved frozen inventory exact; installer sources exact; denylisted identifiers absent; AnyCable dev exception exact; telemetry disabled
+Toolchain: Ruby 3.4.10; Bundler 2.6.9
+Bundle complete! 19 Gemfile dependencies, 133 gems now installed.
+aube 1.29.1 ... resolved 130 packages
+PostgreSQL 17.10 server started; application databases prepared
 exit 0
 ```
 
 The repaired inventory is mise 2026.7.7 (repository minimum 2026.7.1), Ruby 3.4.10, Node 24.18.0, Go 1.26.5, Aube 1.29.1, fnox 1.28.0, GoReleaser 2.17.0, hk 1.49.0, PostgreSQL 17.10, and AnyCable Go 1.6.15. Ruby reported zlib gem 3.2.3, `mise settings get use_versions_host_track` reported `false`, and the activated environment reported `ANYCABLE_DISABLE_TELEMETRY=true`. PostgreSQL's installer plugin and Ruby's ruby-build helper matched their checked-in commit pins. The normalized `mise.lock` remained byte-identical after installation and contains 54 checksum records and 20 GitHub-attestation records.
 
-## Post-repair frozen setup
+The system-shell preflight runs before mise and rejects a pre-existing PostgreSQL plugin unless its origin, full commit, and clean-tree state all match the approved source. If the plugin is absent, `mise.toml` installs the commit-pinned source. The wrapper disables the personal global mise config, then runs the ordinary setup task.
+
+## Post-repair frozen setup task
 
 ```text
 $ mise run setup
@@ -31,12 +40,12 @@ The exact-inventory gate ran before Bundler, Aube, or Go could install or execut
 
 ```text
 $ mise run test
-1 runs, 1 assertions, 0 failures, 0 errors, 0 skips
+6 runs, 18 assertions, 0 failures, 0 errors, 0 skips
 ok github.com/ZempTime/shortbread/cli
 exit 0
 
 $ mise run lint
-27 files inspected, no offenses detected
+28 files inspected, no offenses detected
 node_modules symlink tree is consistent (checked 130 packages).
 exit 0
 
@@ -72,7 +81,7 @@ exit 0
 
 The license command's full output additionally records 40 exact/pattern-bounded native/WASM metadata exceptions. The Vite builds reported the same non-fatal `@inertiajs/vite` source-map warning as the pre-review build.
 
-Finally, `mise exec -- bin/ci` exercised the checked-in composition—Setup, Bootstrap, Lint, Typecheck, Security, Tests, and Build—and all seven steps passed against the final phase-one freeze in 17.97 seconds.
+Finally, `mise exec -- bin/ci` exercised the checked-in composition—Setup, Bootstrap, Lint, Typecheck, Security, Tests, and Build—and all seven steps passed against the final phase-one freeze in 12.96 seconds.
 
 The URL-only Action Cable helper was rendered directly through Rails and produced `<meta name="action-cable-url" content="ws://localhost:8080/cable" />`; an assertion rejected `jid`, JWT, or token query parameters.
 
