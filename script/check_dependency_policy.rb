@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "digest"
+require "open3"
 require "pathname"
 
 ROOT = Pathname.new(__dir__).join("..").expand_path
@@ -21,8 +22,8 @@ APPROVED_SHA256 = {
   "aube-lock.yaml" => "eea740064b701146c07ac54822c4350062c5c6c556496e9baeee23e6640b8b42",
   "cli/go.mod" => "7fa082a96a652f0f16d2fef69e642a10b6bfad90e5f5c7401bd7ba6a7c48f6d0",
   "cli/go.sum" => "d545e881576b1331ef5dad5780a92b42c33968d425858981b7458f1741d6eb3e",
-  "mise.lock" => "d6b7717c3f441f0e3bf2586e5d8e4c9de445601afcaacc890d808401e0873764",
-  "mise.toml" => "976ba13c6fa943d119528cc2430121aa7da0d1077b3099d47159c6ed856e28d8"
+  "mise.lock" => "98ec06ddfbd67a83fe1bbc09e35db7c7377b567769d59c335ac7cfd60b827407",
+  "mise.toml" => "6ca571722feeb327af42c691ad42313462277899d4c2b375ef00cdfd43462e77"
 }.freeze
 FORBIDDEN = %w[
   airbrake
@@ -44,11 +45,19 @@ FORBIDDEN = %w[
   skylight
   telemetry
 ].freeze
+MISE_TELEMETRY_ENV = [
+  'ANYCABLE_DISABLE_TELEMETRY = "true"',
+  'TEST_TELEMETRY_DIR = "{{config_root}}/config/go-telemetry"'
+].freeze
 
 ANYCABLE_DEV_CONFIG_SHA256 = %w[
   4dd00443 72a3effa 6385e90a 442f6b7f
   43eef317 420337e1 17545390 c957a79d
 ].join.freeze
+GO_TELEMETRY_MODE = ROOT.join("config/go-telemetry/mode")
+POSTGRES_PLUGIN_REPOSITORY = "https://github.com/mise-plugins/mise-postgres.git"
+POSTGRES_PLUGIN_REVISION = "dcbda94a5229b6906ecf87460584739d965d9ca0"
+RUBY_BUILD_REVISION = "013c27d7e557b71b21bfa0f9c7af1081cf5411dc"
 
 def identifiers(source)
   source.downcase.scan(/[a-z0-9]+/)
@@ -72,7 +81,17 @@ findings = MANIFESTS.filter_map do |relative_path|
     abort "Dependency inventory changed without controller review: #{relative_path}"
   end
 
-  matches = FORBIDDEN & identifiers(path.read)
+  source = path.read
+  if relative_path == "mise.toml"
+    MISE_TELEMETRY_ENV.each do |setting|
+      unless source.scan(setting).one?
+        abort "mise.toml must contain exactly one copy of every approved telemetry-disable setting"
+      end
+      source = source.sub(setting, "")
+    end
+  end
+
+  matches = FORBIDDEN & identifiers(source)
   next if matches.empty?
 
   [ relative_path, matches ]
@@ -86,4 +105,48 @@ unless actual_anycable_digest == ANYCABLE_DEV_CONFIG_SHA256
   abort "anycable.toml changed; review its fnox exception before updating the approved digest"
 end
 
-puts "Dependency policy: approved frozen inventory exact; denylisted identifiers absent; AnyCable dev exception exact"
+expected_telemetry_dir = GO_TELEMETRY_MODE.dirname.to_s
+unless ENV["TEST_TELEMETRY_DIR"] == expected_telemetry_dir
+  abort "Go telemetry isolation is inactive; enter through the checked-in mise environment"
+end
+unless ENV["ANYCABLE_DISABLE_TELEMETRY"] == "true"
+  abort "AnyCable telemetry must remain disabled in the checked-in mise environment"
+end
+unless GO_TELEMETRY_MODE.read == "off\n"
+  abort "Go telemetry isolation must remain fully off"
+end
+telemetry_files = GO_TELEMETRY_MODE.dirname.glob("**/*").select(&:file?)
+unless telemetry_files == [ GO_TELEMETRY_MODE ]
+  abort "Go created telemetry data inside the repository isolation directory"
+end
+
+data_home = if ENV["MISE_DATA_DIR"]
+  Pathname.new(ENV.fetch("MISE_DATA_DIR"))
+elsif ENV["XDG_DATA_HOME"]
+  Pathname.new(ENV.fetch("XDG_DATA_HOME")).join("mise")
+else
+  Pathname.new(Dir.home).join(".local/share/mise")
+end
+postgres_plugin = data_home.join("plugins/postgres")
+postgres_revision, _, revision_status = Open3.capture3(
+  "git", "-C", postgres_plugin.to_s, "rev-parse", "HEAD"
+)
+postgres_origin, _, origin_status = Open3.capture3(
+  "git", "-C", postgres_plugin.to_s, "remote", "get-url", "origin"
+)
+unless revision_status.success? && postgres_revision.strip == POSTGRES_PLUGIN_REVISION
+  abort "Installed PostgreSQL plugin does not match the approved revision"
+end
+unless origin_status.success? && postgres_origin.strip == POSTGRES_PLUGIN_REPOSITORY
+  abort "Installed PostgreSQL plugin does not match the approved repository"
+end
+
+mise_source = ROOT.join("mise.toml").read
+unless mise_source.scan("#{POSTGRES_PLUGIN_REPOSITORY}##{POSTGRES_PLUGIN_REVISION}").one?
+  abort "PostgreSQL installer source must remain pinned to the approved revision"
+end
+unless mise_source.scan("https://github.com/rbenv/ruby-build/archive/#{RUBY_BUILD_REVISION}.zip").one?
+  abort "ruby-build must remain pinned to the approved revision archive"
+end
+
+puts "Dependency policy: approved frozen inventory exact; installer sources exact; denylisted identifiers absent; AnyCable dev exception exact; telemetry disabled"

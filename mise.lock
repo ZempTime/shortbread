@@ -279,7 +279,7 @@ backend = "core:ruby"
 
 [tools.ruby.options]
 compile = "true"
-ruby_build_repo = "https://github.com/rbenv/ruby-build.git"
+ruby_build_repo = "https://github.com/rbenv/ruby-build/archive/013c27d7e557b71b21bfa0f9c7af1081cf5411dc.zip"
 ruby_install = "false"
 
 [tools.ruby."platforms.linux-arm64"]

@@ -10,14 +10,14 @@ mise all tools are installed
 exit 0
 ```
 
-The repaired inventory is mise 2026.7.7 (repository minimum 2026.7.1), Ruby 3.4.10, Node 24.18.0, Go 1.26.5, Aube 1.29.1, fnox 1.28.0, GoReleaser 2.17.0, hk 1.49.0, PostgreSQL 17.10, and AnyCable Go 1.6.15. Ruby reported zlib gem 3.2.3, and `mise settings get use_versions_host_track` reported `false`. The normalized `mise.lock` remained byte-identical after installation and contains 54 checksum records and 20 GitHub-attestation records.
+The repaired inventory is mise 2026.7.7 (repository minimum 2026.7.1), Ruby 3.4.10, Node 24.18.0, Go 1.26.5, Aube 1.29.1, fnox 1.28.0, GoReleaser 2.17.0, hk 1.49.0, PostgreSQL 17.10, and AnyCable Go 1.6.15. Ruby reported zlib gem 3.2.3, `mise settings get use_versions_host_track` reported `false`, and the activated environment reported `ANYCABLE_DISABLE_TELEMETRY=true`. PostgreSQL's installer plugin and Ruby's ruby-build helper matched their checked-in commit pins. The normalized `mise.lock` remained byte-identical after installation and contains 54 checksum records and 20 GitHub-attestation records.
 
 ## Post-repair frozen setup
 
 ```text
 $ mise run setup
 == Verifying approved dependency inventory ==
-Dependency policy: approved frozen inventory exact; denylisted identifiers absent; AnyCable dev exception exact
+Dependency policy: approved frozen inventory exact; installer sources exact; denylisted identifiers absent; AnyCable dev exception exact; telemetry disabled
 Toolchain: Ruby 3.4.10; Bundler 2.6.9
 Bundle complete! 19 Gemfile dependencies, 133 gems now installed.
 aube 1.29.1 ... resolved 130 packages
@@ -61,7 +61,7 @@ No vulnerabilities found
 No known vulnerabilities found
 No ignored builds.
 License audit: 133 Ruby gems; 170 browser packages; 16 Go modules
-Dependency policy: approved frozen inventory exact; denylisted identifiers absent; AnyCable dev exception exact
+Dependency policy: approved frozen inventory exact; installer sources exact; denylisted identifiers absent; AnyCable dev exception exact; telemetry disabled
 all modules verified
 exit 0
 
@@ -72,9 +72,11 @@ exit 0
 
 The license command's full output additionally records 40 exact/pattern-bounded native/WASM metadata exceptions. The Vite builds reported the same non-fatal `@inertiajs/vite` source-map warning as the pre-review build.
 
-Finally, `mise exec -- bin/ci` exercised the checked-in composition—Setup, Bootstrap, Lint, Typecheck, Security, Tests, and Build—and all seven steps passed after the telemetry-setting repair in 15.69 seconds.
+Finally, `mise exec -- bin/ci` exercised the checked-in composition—Setup, Bootstrap, Lint, Typecheck, Security, Tests, and Build—and all seven steps passed against the final phase-one freeze in 17.97 seconds.
 
 The URL-only Action Cable helper was rendered directly through Rails and produced `<meta name="action-cable-url" content="ws://localhost:8080/cable" />`; an assertion rejected `jid`, JWT, or token query parameters.
+
+The Go telemetry repair was verified without changing the user's global mode. SHA-256 snapshots of every file in the global Go telemetry directory were identical before and after `go version`, `gofmt`, CLI tests, and the CLI build; `config/go-telemetry` still contained only its checked-in `mode` file with value `off`.
 
 ## Post-repair development stack smoke
 

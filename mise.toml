@@ -1,5 +1,8 @@
 min_version = "2026.7.1"
 
+[plugins]
+postgres = "https://github.com/mise-plugins/mise-postgres.git#dcbda94a5229b6906ecf87460584739d965d9ca0"
+
 [tools]
 ruby = "3.4.10"
 node = "24.18.0"
@@ -14,6 +17,14 @@ postgres = "17.10"
 [settings]
 activate_aggressive = true
 use_versions_host_track = false
+
+[settings.ruby]
+compile = true
+ruby_build_repo = "https://github.com/rbenv/ruby-build/archive/013c27d7e557b71b21bfa0f9c7af1081cf5411dc.zip"
+
+[env]
+ANYCABLE_DISABLE_TELEMETRY = "true"
+TEST_TELEMETRY_DIR = "{{config_root}}/config/go-telemetry"
 
 [tasks.setup]
 description = "Install dependencies and prepare local databases"

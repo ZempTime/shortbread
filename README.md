@@ -31,6 +31,8 @@ mise run setup
 
 `mise run setup` enters Bundler through the pinned Ruby with frozen-lock enforcement, installs the frozen Ruby, browser, and Go dependency graphs, and prepares repository-local PostgreSQL databases. It does not create product data or credentials. The conventional root `Gemfile` and `Gemfile.lock` remain the single Ruby dependency contract; there is no separate duplicate `mise bundle` task. Run `mise tasks` to see the public development, test, build, lint, typecheck, security, license, and bootstrap-check commands.
 
+The checked-in mise configuration disables mise's install-statistics tracking and AnyCable's anonymous PostHog telemetry, and routes the pinned Go toolchain through a repository-scoped `off` telemetry mode. The exact-inventory gate runs before dependency installation and fails if those controls are inactive or if Go creates a counter/report file in that isolation directory; it does not alter a contributor's global Go telemetry preference.
+
 ## Trust contract
 
 > Shortbread itself never sends site content, feedback, invitation data, or viewer PII to AI, analytics, or optional third-party processors. Data is processed only by operator-configured Northflank, PlanetScale, and R2. Producers/agents outside Shortbread are operator-controlled.
