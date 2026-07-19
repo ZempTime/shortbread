@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-require "bundler"
 require "digest"
 require "fileutils"
 require "rbconfig"
@@ -11,6 +10,10 @@ def system!(*args, **options)
 end
 
 FileUtils.chdir APP_ROOT do
+  puts "== Verifying approved dependency inventory =="
+  system! RbConfig.ruby, "script/check_dependency_policy.rb"
+
+  require "bundler"
   puts "Toolchain: Ruby #{RUBY_VERSION}; Bundler #{Bundler::VERSION}"
 
   puts "== Installing Ruby dependencies =="

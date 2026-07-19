@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-ruby "3.4.8"
+ruby "3.4.10"
 
 gem "anycable-rails-core", "~> 1.6"
 gem "aws-sdk-s3", "~> 1.226"

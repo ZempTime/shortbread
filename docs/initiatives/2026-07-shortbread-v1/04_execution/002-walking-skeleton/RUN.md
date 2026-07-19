@@ -6,8 +6,8 @@
 | Branch | `ticket-2-walking-skeleton` |
 | Pinned baseline | `412be84d441325c5e61004da87ec6878e588d7b4` (`Start Shortbread v1 execution`) |
 | Owner | `ZempTime` |
-| Current phase | Dependency freeze review |
-| State | Bootstrap, locks, compatibility adjustments, and supply-chain evidence complete; awaiting fixed-SHA review |
+| Current phase | Dependency freeze review rerun |
+| State | Review repairs and controller verification are complete; awaiting independent reruns against the fixed repair SHA |
 
 ## Inputs
 
@@ -21,7 +21,13 @@
 
 Scaffold and audit the complete approved Ruby, browser, Go, and tool baseline. Prove the Rails boot, browser production build, Go tests/build, and real CLI help boundary through `mise run bootstrap-check`. Record compatibility and supply-chain evidence, then stop for the controller-owned dependency freeze.
 
-This phase must not create product records, product routes, deployment resources, credentials, telemetry, or proprietary integrations. It must not commit, open a PR, or mutate GitHub.
+This phase must not create product records, product routes, deployment resources, credentials, telemetry, or proprietary integrations. The subordinate implementation worker must not commit, open a PR, or mutate GitHub. The controller may create and push checkpoint/freeze commits so independent reviewers receive a durable fixed SHA; PR creation remains a later integration action.
+
+## Controller checkpoints
+
+- `e3a41c8` reconstructed the dependency scaffold as a durable local checkpoint after the temporary worker workspace was lost.
+- `914ddd6` froze the first audited bootstrap and was pushed as the fixed input for independent review.
+- The repair checkpoint contains only dispositions for review findings and refreshed audit evidence before review reruns.
 
 ## Evidence
 

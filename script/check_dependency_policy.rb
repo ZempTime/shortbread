@@ -15,14 +15,14 @@ MANIFESTS = %w[
   mise.toml
 ].freeze
 APPROVED_SHA256 = {
-  "Gemfile" => "f4db58a991234c2901420c60d1a1d986fcbf936e6713b194a5bbd48599b09e41",
-  "Gemfile.lock" => "d88c5c3d7bc6efde2b1bbb75548210de9765af44fc1a2f3376e3934067edff5b",
-  "package.json" => "faf29c611ac72340ab5858118dbaa630a084b7e9623e130f059904214393e070",
-  "aube-lock.yaml" => "9c44ce59c8f03c92e40332b40e364ad9752faa8a3ee73d31e2760ff1f021edda",
+  "Gemfile" => "26b77e654971a51bdd6f68c9dfb069d390fbdad04f1267532d99fa6bbee106ad",
+  "Gemfile.lock" => "2b43c8347b0333cd0f63ed21882c1c6a4f626edf65c4cbd1118da8a6c86a9d05",
+  "package.json" => "884488b740a4e661712e19496c919c2256073517ad6c7f73baa5f17b018fc5c5",
+  "aube-lock.yaml" => "eea740064b701146c07ac54822c4350062c5c6c556496e9baeee23e6640b8b42",
   "cli/go.mod" => "7fa082a96a652f0f16d2fef69e642a10b6bfad90e5f5c7401bd7ba6a7c48f6d0",
   "cli/go.sum" => "d545e881576b1331ef5dad5780a92b42c33968d425858981b7458f1741d6eb3e",
-  "mise.lock" => "4d898ab54f627469d2f2f406fb7d236dce3ce6a11bf085b8f85515f04038de31",
-  "mise.toml" => "ae476e65241d3affc15c6812b567c66732d07393d743fd30156f66db0872ae6c"
+  "mise.lock" => "d6b7717c3f441f0e3bf2586e5d8e4c9de445601afcaacc890d808401e0873764",
+  "mise.toml" => "e05cf214cfb368f8ec4e10221faac46541673477f756fca2176ec893e6d029ab"
 }.freeze
 FORBIDDEN = %w[
   airbrake
@@ -46,8 +46,8 @@ FORBIDDEN = %w[
 ].freeze
 
 ANYCABLE_DEV_CONFIG_SHA256 = %w[
-  91aef562 7893401e 75d78515 2f9b6800
-  c50c4672 382d93aa 94f78878 6930cbf6
+  4dd00443 72a3effa 6385e90a 442f6b7f
+  43eef317 420337e1 17545390 c957a79d
 ].join.freeze
 
 def identifiers(source)

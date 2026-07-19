@@ -3,7 +3,7 @@ presets = ["broker"]
 broadcast_adapters = ["http"]
 
 [logging]
-debug = true
+debug = false
 
 [rpc]
 implementation = "none"

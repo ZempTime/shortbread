@@ -2,9 +2,9 @@
   "name": "shortbread",
   "private": true,
   "type": "module",
-  "packageManager": "aube@1.25.2",
+  "packageManager": "aube@1.29.1",
   "engines": {
-    "node": "24.7.0"
+    "node": "24.18.0"
   },
   "scripts": {
     "build": "vite build",
@@ -40,7 +40,7 @@
   "devEngines": {
     "runtime": {
       "name": "node",
-      "version": "24.7.0",
+      "version": "24.18.0",
       "onFail": "error"
     }
   }
