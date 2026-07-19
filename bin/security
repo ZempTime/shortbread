@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ruby -S bundle exec bundle-audit check
+aube audit --audit-level low
+ruby script/check_dependency_policy.rb
+fnox --non-interactive scan --ignore '.git/**' --ignore 'tmp/**' --ignore 'node_modules/**' .
+(cd cli && go vet ./...)

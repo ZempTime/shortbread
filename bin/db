@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+app_root=$(cd "$(dirname "$0")/.." && pwd)
+data_dir=${SHORTBREAD_POSTGRES_DATA_DIR:-"$app_root/tmp/postgres/data"}
+socket_dir=${SHORTBREAD_DATABASE_HOST:-"$app_root/tmp/postgres/socket"}
+port=${SHORTBREAD_DATABASE_PORT:-55432}
+log_file="$app_root/log/postgres.log"
+
+case "$port" in
+  *[!0-9]*|'')
+    echo "SHORTBREAD_DATABASE_PORT must be numeric" >&2
+    exit 2
+    ;;
+esac
+
+start_postgres() {
+  mkdir -p "$data_dir" "$socket_dir" "$app_root/log"
+
+  if [[ ! -f "$data_dir/PG_VERSION" ]]; then
+    initdb --auth=trust --encoding=UTF8 --no-locale -D "$data_dir"
+  fi
+
+  if ! pg_ctl -D "$data_dir" status >/dev/null 2>&1; then
+    pg_ctl -D "$data_dir" -l "$log_file" -o "-k $socket_dir -p $port" -w start
+  fi
+}
+
+case "${1:-prepare}" in
+  start)
+    start_postgres
+    ;;
+  stop)
+    if pg_ctl -D "$data_dir" status >/dev/null 2>&1; then
+      pg_ctl -D "$data_dir" -w stop
+    fi
+    ;;
+  status)
+    pg_ctl -D "$data_dir" status
+    ;;
+  prepare)
+    start_postgres
+    bin/rails db:prepare
+    ;;
+  *)
+    echo "usage: bin/db {start|stop|status|prepare}" >&2
+    exit 2
+    ;;
+esac

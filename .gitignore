@@ -6,18 +6,34 @@
 !.env.example
 !.env.*.example
 
-# Rails credential decryption keys. Encrypted credential files may be committed.
-config/master.key
-config/credentials/*.key
+# Rails runtime, local databases, credentials, and generated assets.
+/.bundle
+/config/*.key
+/config/credentials*.yml.enc
+/config/credentials/*.key
+/log/*
+!/log/.keep
+/storage/*
+!/storage/.keep
+/tmp/*
+!/tmp/.keep
+!/tmp/pids/
+/tmp/pids/*
+!/tmp/pids/.keep
+/public/assets
+/public/vite*
 
-# Local secret-tool state. Keep shared mise.toml and documented non-secret fnox config visible.
-.mise.local.toml
-mise.local.toml
-.fnox.local.*
-fnox.local.*
-.fnox/
+# Browser and Go build/cache output.
+/node_modules
+*.tsbuildinfo
+/cli/shortbread
 
-# Generated local credential handoffs. Commit sanitized example files instead.
+# Local secret-tool and mise state.
+/.fnox/
+/.fnox.local.*
+/fnox.local.*
+/.mise.local.toml
+/mise.local.toml
 *.credentials.local
 *.secrets.local
 /credentials.local/

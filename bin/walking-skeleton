@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+echo "Walking skeleton pending: phase 2 must implement and prove publish -> invite -> explicit accept -> private Site view." >&2
+exit 1

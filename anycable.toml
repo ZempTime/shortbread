@@ -1,0 +1,9 @@
+secret = "shortbread-development-only"
+presets = ["broker"]
+broadcast_adapters = ["http"]
+
+[logging]
+debug = true
+
+[rpc]
+implementation = "none"
