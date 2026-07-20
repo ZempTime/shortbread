@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title data-inertia><%= content_for(:title) || "Shortbread" %></title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="application-name" content="Shortbread">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= action_cable_meta_tag %>
+    <%= inertia_ssr_head %>
+    <%= vite_react_refresh_tag %>
+    <%= vite_client_tag %>
+    <%= vite_typescript_tag "inertia.tsx" %>
+    <%= vite_stylesheet_tag "application.css" %>
+    <%= yield :head %>
+  </head>
+
+  <body>
+    <%= yield %>
+  </body>
+</html>

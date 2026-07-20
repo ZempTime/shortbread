@@ -1,0 +1,30 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
+  host: <%= ENV.fetch("SHORTBREAD_DATABASE_HOST", File.expand_path("../tmp/postgres/socket", __dir__)) %>
+  port: <%= ENV.fetch("SHORTBREAD_DATABASE_PORT", 55432) %>
+
+development:
+  primary: &development_primary
+    <<: *default
+    database: shortbread_development
+  queue:
+    <<: *development_primary
+    database: shortbread_development_queue
+    migrations_paths: db/queue_migrate
+
+test:
+  <<: *default
+  database: shortbread_test
+
+production:
+  primary:
+    <<: *default
+    database: shortbread_production
+    url: <%= ENV["DATABASE_URL"] %>
+  queue:
+    <<: *default
+    database: shortbread_production_queue
+    url: <%= ENV["QUEUE_DATABASE_URL"] %>
+    migrations_paths: db/queue_migrate

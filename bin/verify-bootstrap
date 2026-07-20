@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+bin/check-installer-sources
+bin/rails runner 'abort "unexpected Rails version" unless Rails.version == "8.1.3"; abort "unexpected queue adapter" unless ActiveJob::Base.queue_adapter_name == "solid_queue"; abort "unexpected Solid Queue database" unless SolidQueue::Record.connection_db_config.name == "queue"; abort "Solid Queue schema missing" unless SolidQueue::Process.table_exists?; puts "Rails boot: #{Rails.version}; Solid Queue: queue"'
+anycable-go --config-path anycable.toml --print-config >/dev/null
+echo "AnyCable config: green"
+aube run build
+
+(
+  cd cli
+  go test -mod=readonly ./...
+  go build -mod=readonly -o ../tmp/shortbread-bootstrap ./cmd/shortbread
+)
+
+tmp/shortbread-bootstrap --help >/dev/null
+echo "Bootstrap seams: green"

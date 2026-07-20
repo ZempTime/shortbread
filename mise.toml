@@ -1,13 +1,106 @@
-[tools]
-ruby = "3.4.8"
-node = "24.7.0"
-go = "1.26.2"
-aube = "1.25.2"
-fnox = "1.28.0"
-hk = "1.49.0"
-postgres = "17.5"
-"ubi:anycable/anycable[exe=anycable-go]" = "1.6.15"
+min_version = "2026.7.1"
 
-# Application, CLI, database, test, lint, typecheck, and release tasks are added
-# by the first vertical tracer alongside the files they execute. Tool versions
-# are front-loaded here; credentials and deployment secrets never belong in mise.
+[plugins]
+postgres = "https://github.com/mise-plugins/mise-postgres.git#dcbda94a5229b6906ecf87460584739d965d9ca0"
+
+[tools]
+ruby = "3.4.10"
+node = "24.18.0"
+go = "1.26.5"
+aube = "1.29.1"
+fnox = "1.28.0"
+goreleaser = "2.17.0"
+hk = "1.49.0"
+postgres = "17.10"
+"github:anycable/anycable[exe=anycable-go]" = "1.6.15"
+
+[settings]
+activate_aggressive = true
+use_versions_host_track = false
+
+[settings.ruby]
+compile = true
+ruby_build_repo = "https://github.com/rbenv/ruby-build/archive/013c27d7e557b71b21bfa0f9c7af1081cf5411dc.zip"
+
+[env]
+ANYCABLE_DISABLE_TELEMETRY = "true"
+TEST_TELEMETRY_DIR = "{{config_root}}/config/go-telemetry"
+
+[tasks.setup]
+description = "Install dependencies and prepare local databases"
+run = "ruby bin/setup --skip-server"
+
+[tasks.database]
+alias = "db"
+description = "Start PostgreSQL and prepare application databases"
+run = "bin/db prepare"
+
+[tasks."db:start"]
+description = "Start the repository-local PostgreSQL server"
+run = "bin/db start"
+
+[tasks."db:stop"]
+description = "Stop the repository-local PostgreSQL server"
+run = "bin/db stop"
+
+[tasks.dev]
+description = "Run web, Vite, Solid Queue, and AnyCable processes"
+run = "bin/dev"
+
+[tasks."dev:web"]
+run = "ruby -S bundle exec pitchfork -c config/pitchfork.rb"
+
+[tasks."dev:assets"]
+run = "aube run dev"
+
+[tasks."dev:worker"]
+run = "bin/jobs"
+
+[tasks."dev:cable"]
+run = "anycable-go --config-path anycable.toml"
+
+[tasks.test]
+description = "Run Rails and black-box Go CLI tests"
+run = """
+bin/rails test
+(cd cli && go test -mod=readonly ./...)
+"""
+
+[tasks.lint]
+description = "Run Ruby, browser dependency, and Go static checks"
+run = "bin/lint"
+
+[tasks.typecheck]
+description = "Typecheck the browser application"
+run = "aube run typecheck"
+
+[tasks."cli:build"]
+description = "Build the shortbread CLI"
+run = "mkdir -p tmp && (cd cli && go build -mod=readonly -o ../tmp/shortbread ./cmd/shortbread)"
+
+[tasks."cli:test"]
+description = "Run black-box shortbread CLI tests"
+run = "cd cli && go test -mod=readonly ./..."
+
+[tasks.build]
+description = "Build browser assets and the shortbread CLI"
+run = """
+aube run build
+mise run cli:build
+"""
+
+[tasks.security]
+description = "Run applicable bootstrap vulnerability and trust-boundary checks"
+run = "bin/security"
+
+[tasks.licenses]
+description = "Audit the resolved Ruby, browser, and Go dependency licenses"
+run = "bin/licenses"
+
+[tasks.bootstrap-check]
+description = "Verify the dependency-bootstrap public seams"
+run = "bin/verify-bootstrap"
+
+[tasks.walking-skeleton]
+description = "Run the phase-2 publish/invite/view tracer (currently pending)"
+run = "bin/walking-skeleton"

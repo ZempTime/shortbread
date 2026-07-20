@@ -1,0 +1,2 @@
+# Shared fnox configuration is intentionally empty. Production secrets must
+# remain in provider stores or operator-local ignored files, never this file.

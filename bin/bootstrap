@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+app_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$app_root"
+
+bin/check-installer-sources
+MISE_GLOBAL_CONFIG_FILE="${MISE_GLOBAL_CONFIG_FILE:-/dev/null}" mise install
+exec mise run setup

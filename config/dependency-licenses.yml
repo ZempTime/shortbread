@@ -1,0 +1,115 @@
+allowed:
+  ruby:
+    - Apache-2.0
+    - BSD-2-Clause
+    - BSD-3-Clause
+    - EPL-1.0
+    - GPL-2.0
+    - GPL-2.0+
+    - GPL-2.0-only
+    - GPL-3.0-or-later
+    - LGPL-2.1
+    - MIT
+    - Ruby
+  browser:
+    - 0BSD
+    - Apache-2.0
+    - BSD-3-Clause
+    - ISC
+    - MIT
+    - MPL-2.0
+  go:
+    - Apache-2.0
+    - BSD-2-Clause
+    - BSD-3-Clause
+    - ISC
+    - MIT
+    - MIT AND Apache-2.0
+
+# These gems are locked only for non-host platforms. Their exact versions and
+# declared upstream licenses are audited here because Bundler cannot materialize
+# their gemspecs on the host platform.
+ruby_lock_only:
+  tzinfo-data:
+    version: 1.2026.3
+    licenses: [MIT]
+
+# Aube reports UNKNOWN for optional non-host native/WASM packages whose
+# published package metadata omits the parent project's license. Every rule is
+# family- and version-bounded so a new unknown or version fails closed.
+browser_unknown:
+  - pattern: '\A@rolldown/binding-[a-z0-9-]+\z'
+    version: 1.1.5
+    license: MIT
+  - pattern: '\A@tailwindcss/oxide-[a-z0-9-]+\z'
+    version: 4.3.3
+    license: MIT
+  - pattern: '\Alightningcss-[a-z0-9-]+\z'
+    version: 1.32.0
+    license: MPL-2.0
+  - pattern: '\A@emnapi/core\z'
+    version: 1.11.1
+    license: MIT
+  - pattern: '\A@emnapi/runtime\z'
+    version: 1.11.1
+    license: MIT
+  - pattern: '\A@emnapi/wasi-threads\z'
+    version: 1.2.2
+    license: MIT
+  - pattern: '\A@napi-rs/wasm-runtime\z'
+    version: 1.1.6
+    license: MIT
+  - pattern: '\A@tybys/wasm-util\z'
+    version: 0.10.3
+    license: MIT
+# Exact module versions make the Go classification a lock-coupled gate rather
+# than a stale inventory. The main module and Go standard library are excluded.
+go:
+  github.com/cpuguy83/go-md2man/v2:
+    version: v2.0.6
+    license: MIT
+  github.com/danieljoos/wincred:
+    version: v1.2.3
+    license: MIT
+  github.com/davecgh/go-spew:
+    version: v1.1.1
+    license: ISC
+  github.com/godbus/dbus/v5:
+    version: v5.2.2
+    license: BSD-2-Clause
+  github.com/inconshreveable/mousetrap:
+    version: v1.1.0
+    license: Apache-2.0
+  github.com/pmezard/go-difflib:
+    version: v1.0.0
+    license: BSD-3-Clause
+  github.com/russross/blackfriday/v2:
+    version: v2.1.0
+    license: BSD-2-Clause
+  github.com/spf13/cobra:
+    version: v1.10.2
+    license: Apache-2.0
+  github.com/spf13/pflag:
+    version: v1.0.9
+    license: BSD-3-Clause
+  github.com/stretchr/objx:
+    version: v0.5.2
+    license: MIT
+  github.com/stretchr/testify:
+    version: v1.11.1
+    license: MIT
+  github.com/zalando/go-keyring:
+    version: v0.2.8
+    license: MIT
+  go.yaml.in/yaml/v3:
+    version: v3.0.4
+    license: MIT AND Apache-2.0
+  golang.org/x/sys:
+    version: v0.27.0
+    license: BSD-3-Clause
+  gopkg.in/check.v1:
+    version: v0.0.0-20161208181325-20d25e280405
+    license: BSD-2-Clause
+  gopkg.in/yaml.v3:
+    version: v3.0.1
+    license: MIT AND Apache-2.0

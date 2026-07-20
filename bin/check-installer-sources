@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+approved_origin="https://github.com/mise-plugins/mise-postgres.git"
+approved_revision="dcbda94a5229b6906ecf87460584739d965d9ca0"
+
+if [[ -n "${MISE_DATA_DIR:-}" ]]; then
+  mise_data_dir="$MISE_DATA_DIR"
+elif [[ -n "${XDG_DATA_HOME:-}" ]]; then
+  mise_data_dir="$XDG_DATA_HOME/mise"
+else
+  mise_data_dir="$HOME/.local/share/mise"
+fi
+
+plugin_dir="$mise_data_dir/plugins/postgres"
+
+# A missing plugin is safe: mise.toml installs it from the commit-pinned source.
+if [[ ! -e "$plugin_dir" ]]; then
+  exit 0
+fi
+
+if [[ ! -d "$plugin_dir/.git" ]]; then
+  echo "PostgreSQL installer preflight failed: cached plugin is not an ordinary Git checkout." >&2
+  exit 1
+fi
+
+if ! actual_origin="$(git -C "$plugin_dir" remote get-url origin 2>/dev/null)"; then
+  echo "PostgreSQL installer preflight failed: cached plugin metadata is unreadable." >&2
+  exit 1
+fi
+if ! actual_revision="$(git -C "$plugin_dir" rev-parse HEAD 2>/dev/null)"; then
+  echo "PostgreSQL installer preflight failed: cached plugin metadata is unreadable." >&2
+  exit 1
+fi
+if ! dirty="$(git -C "$plugin_dir" status --porcelain --untracked-files=all 2>/dev/null)"; then
+  echo "PostgreSQL installer preflight failed: cached plugin metadata is unreadable." >&2
+  exit 1
+fi
+
+if [[ "$actual_origin" != "$approved_origin" ]]; then
+  echo "PostgreSQL installer preflight failed: cached plugin origin is not approved." >&2
+  exit 1
+fi
+
+if [[ "$actual_revision" != "$approved_revision" ]]; then
+  echo "PostgreSQL installer preflight failed: cached plugin revision is not approved." >&2
+  exit 1
+fi
+
+if [[ -n "$dirty" ]]; then
+  echo "PostgreSQL installer preflight failed: cached plugin contains local changes." >&2
+  exit 1
+fi
+
+echo "PostgreSQL installer preflight: approved origin, revision, and clean tree"

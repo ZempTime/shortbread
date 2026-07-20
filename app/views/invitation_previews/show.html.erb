@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Private Shortbread invitation</title>
+    <script nonce="<%= nonce %>">
+      (() => {
+        const secret = /^#[A-Za-z0-9_-]{43}$/.test(window.location.hash) ? window.location.hash.slice(1) : "";
+        history.replaceState(null, "", window.location.pathname);
+
+        document.addEventListener("DOMContentLoaded", () => {
+          const button = document.querySelector('[data-shortbread-invitation-accept="true"]');
+          button.addEventListener("click", () => {
+            button.disabled = true;
+            if (secret === "") return;
+
+            const form = document.createElement("form");
+            form.method = "post";
+            form.action = `${window.location.pathname}/accept`;
+            const field = document.createElement("input");
+            field.type = "hidden";
+            field.name = "invitation_secret";
+            field.value = secret;
+            form.append(field);
+            document.body.append(form);
+            form.submit();
+          }, { once: true });
+        }, { once: true });
+      })();
+    </script>
+  </head>
+  <body>
+    <main>
+      <h1>Private invitation</h1>
+      <p>Continue only if you expected this invitation.</p>
+      <button type="button" data-shortbread-invitation-accept="true">Continue</button>
+    </main>
+  </body>
+</html>

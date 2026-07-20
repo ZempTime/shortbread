@@ -1,0 +1,16 @@
+default: &default
+  access_logs_disabled: true
+  broadcast_adapter: http
+  secret: <%= ENV.fetch("ANYCABLE_SECRET", "shortbread-development-only") %>
+  websocket_url: ws://localhost:8080/cable
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  <<: *default
+  websocket_url: ~
+  secret: ~

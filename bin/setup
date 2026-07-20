@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+require "digest"
+require "fileutils"
+require "rbconfig"
+
+APP_ROOT = File.expand_path("..", __dir__)
+
+def system!(*args, **options)
+  system(*args, **options, exception: true)
+end
+
+FileUtils.chdir APP_ROOT do
+  puts "== Verifying approved dependency inventory =="
+  system! RbConfig.ruby, "script/check_dependency_policy.rb"
+
+  require "bundler"
+  puts "Toolchain: Ruby #{RUBY_VERSION}; Bundler #{Bundler::VERSION}"
+
+  puts "== Installing Ruby dependencies =="
+  bundler_env = { "BUNDLE_FROZEN" => "true" }
+  system(bundler_env, RbConfig.ruby, "-S", "bundle", "check") ||
+    system!(bundler_env, RbConfig.ruby, "-S", "bundle", "install")
+
+  puts "\n== Installing browser dependencies from the frozen Aube lock =="
+  system! "aube", "ci"
+
+  puts "\n== Downloading Go module dependencies =="
+  go_lock_paths = %w[cli/go.mod cli/go.sum]
+  go_locks_before = go_lock_paths.to_h { |path| [ path, Digest::SHA256.file(path).hexdigest ] }
+  system!({ "GOFLAGS" => "-mod=readonly" }, "go", "mod", "download", chdir: "cli")
+  go_locks_after = go_lock_paths.to_h { |path| [ path, Digest::SHA256.file(path).hexdigest ] }
+  abort "Go dependency download changed cli/go.mod or cli/go.sum" unless go_locks_after == go_locks_before
+
+  puts "\n== Preparing PostgreSQL databases =="
+  system! "bin/db", "prepare"
+
+  puts "\n== Removing old logs and temporary files =="
+  system! RbConfig.ruby, "bin/rails", "log:clear", "tmp:clear"
+
+  next if ARGV.include?("--skip-server")
+
+  puts "\n== Starting development processes =="
+  STDOUT.flush
+  exec "bin/dev"
+end

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec mise run --jobs 4 --output prefix dev:web ::: dev:assets ::: dev:worker ::: dev:cable

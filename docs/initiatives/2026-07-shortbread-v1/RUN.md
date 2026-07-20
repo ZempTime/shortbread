@@ -11,7 +11,7 @@
 | External authority | Configure the GitHub issue tracker; create and update PRD/ticket issues; use branches, commits, pull requests, and releases inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
 | State token | `execution-active` |
-| Current state | Execution started from published SHA `3c1fc1b`; local and GitHub state reconciled; #2 is the only unblocked frontier ticket |
+| Current state | #2 fixed code `0fda8d4` is independently approved on Standards, Spec, and Security/Operations; merge-ready tree `055d448` passed detached clean-checkout CI and the real browser tracer; PR integration is active |
 
 ## Input Snapshot
 
@@ -28,15 +28,17 @@
 | 01 Spec | Complete | [Canonical PRD](01_spec/output/2026-07-18-shortbread-v1-prd.md) published as [GitHub #1](https://github.com/ZempTime/shortbread/issues/1) |
 | 02 Ticket map | Complete | [Reviewed graph](02_ticket_map/output/2026-07-18-ticket-map.md) published as [GitHub #2–#17](02_ticket_map/output/tracker.md); #2 is the initial frontier |
 | 03 Goal handoff | Complete | [Persistent goal](03_goal_handoff/output/GOAL.md), controller runbook, dependency baseline, and [temporary-handoff lifecycle](03_goal_handoff/output/handoff.md) exist |
+| 04 Execution | In progress | #2 dependency freeze approved at `3c40a67`; fixed code `0fda8d4` has approved [verification](04_execution/002-walking-skeleton/evidence/phase2-verification.md) and [review evidence](04_execution/002-walking-skeleton/evidence/review-phase2.md); PR integration active |
 | 99 Harvest | Complete for setup | [Setup harvest](99_harvest/output/2026-07-18-goal-setup-harvest.md); implementation tickets repeat the decision |
 
 ## Execution State
 
-- **Reconciled 2026-07-18:** kickoff `main`/`origin/main` was clean at `3c1fc1b655a407d369a6f258af5e3cec33b7be0d`, with no implementation branches, worktrees, or pull requests; the execution-start transition is published at `412be84d441325c5e61004da87ec6878e588d7b4`.
-- **Tracker:** #1–#17 are open; #2 alone has `ready-for-agent`, its published body matches canonical T01, and it is assigned to `ZempTime`.
-- **Claim:** #2, “Publish, invite, and view one private page locally,” on branch `ticket-2-walking-skeleton` in `/private/tmp/shortbread-ticket-2`, pinned to baseline `412be84d441325c5e61004da87ec6878e588d7b4`.
-- **Dependency state:** the approved baseline is being established in #2's mandatory controller-owned dependency-bootstrap checkpoint. Dependency manifests, lockfiles, and tool pins remain unfrozen until its audit and checkpoint commit pass controller inspection.
-- **External input:** no credential or deployment value is requested during implementation; the consolidated credential ceremony remains owned by #17.
+- **Implementation checkpoint:** branch `ticket-2-walking-skeleton` contains independently approved code checkpoint `0fda8d4`, relative to promotion baseline `606a94f`; merge-ready tree `055d448` includes current `main` without a tree change and passed detached clean-checkout CI plus the real browser tracer.
+- **Tracker:** #2 is the claimed T01 ticket. Its implementation and final evidence are promotion-ready; #3 and #4 become the parallel frontier only after #2 integrates.
+- **Frontier:** #2, “Publish, invite, and view one private page locally,” remains the sole active integration unit until its reviewed PR merges.
+- **Dependency state:** the approved baseline is scaffolded, audited, frozen, and independently approved at `3c40a67`; manifests and lockfiles are now controller-only exception surfaces.
+- **Deployment apex:** Chris selected `shortbread.chriszempel.com`; provisioning later sets `SHORTBREAD_APEX_HOST` to that value and configures `<slug>.sites.shortbread.chriszempel.com` DNS/TLS. This is recorded on GitHub #13 and needs no credential during local implementation.
+- **External input:** no credential is requested during the current implementation/review work; the consolidated credential ceremony remains owned by #17.
 
 ## Authority Envelope
 

@@ -8,7 +8,7 @@ Shortbread hosts, gates, and collects. It never builds Bundle content and never 
 
 ## Status
 
-Implementation has not started. The product and delivery control plane are ready for a fresh autonomous controller run:
+The dependency baseline is audited and frozen. The first vertical product tracer—publish one private page, invite a Viewer, explicitly accept, and read it on the Site host—is implemented, independently approved, and awaiting PR integration. The product and delivery control plane are driving the autonomous controller run:
 
 - [accepted v1 PRD](docs/initiatives/2026-07-shortbread-v1/01_spec/output/2026-07-18-shortbread-v1-prd.md) — [GitHub #1](https://github.com/ZempTime/shortbread/issues/1)
 - [tracer-ticket graph](docs/initiatives/2026-07-shortbread-v1/02_ticket_map/output/2026-07-18-ticket-map.md) — initial frontier [GitHub #2](https://github.com/ZempTime/shortbread/issues/2)
@@ -16,6 +16,23 @@ Implementation has not started. The product and delivery control plane are ready
 - [front-loaded dependency baseline](docs/initiatives/2026-07-shortbread-v1/03_goal_handoff/output/dependency-baseline.md)
 
 The v1 build includes the web app, remote-authenticating Go CLI, credential-driven reference deployment, clean-clone setup/operations guides, released artifacts, a synthetic example Site, and screenshots captured repeatably from the real app.
+
+## Development bootstrap
+
+After cloning, explicitly trust this repository's checked-in mise configuration, then run the system-shell bootstrap seam:
+
+```sh
+mise trust mise.toml
+bin/bootstrap
+```
+
+`bin/bootstrap` checks any already-cached PostgreSQL installer plugin's origin, exact revision, and clean tree before mise can execute it. It then installs only this repository's pinned tools with the personal global mise config disabled and runs `mise run setup`. A missing plugin is installed from the commit-pinned source in `mise.toml`.
+
+`mise.lock` supplies verified download URLs and checksums wherever the selected backend publishes them. This checkpoint exercises the task graph on macOS arm64. The lock also inventories Linux arm64/x64 and Windows artifacts where upstream publishes them, but those entries are download coverage rather than claims of an exercised host or native `cmd.exe` compatibility.
+
+`mise run setup` enters Bundler through the pinned Ruby with frozen-lock enforcement, installs the frozen Ruby, browser, and Go dependency graphs, and prepares repository-local PostgreSQL databases. It does not create product data or credentials. The conventional root `Gemfile` and `Gemfile.lock` remain the single Ruby dependency contract; there is no separate duplicate `mise bundle` task. Run `mise tasks` to see the public development, test, build, lint, typecheck, security, license, and bootstrap-check commands.
+
+The checked-in mise configuration disables mise's install-statistics tracking and AnyCable's anonymous PostHog telemetry, and routes the pinned Go toolchain through a repository-scoped `off` telemetry mode. The exact-inventory gate runs before dependency installation and fails if those controls are inactive or if Go creates a counter/report file in that isolation directory; it does not alter a contributor's global Go telemetry preference.
 
 ## Trust contract
 

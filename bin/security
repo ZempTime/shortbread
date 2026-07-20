@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+bin/bundler-audit update
+bin/bundler-audit check
+aube audit --audit-level low
+ignored_builds=$(aube ignored-builds --no-color)
+printf '%s\n' "$ignored_builds"
+if [[ "$ignored_builds" != "No ignored builds." ]]; then
+  echo "Unreviewed browser dependency build scripts are forbidden" >&2
+  exit 1
+fi
+bin/licenses
+ruby script/check_dependency_policy.rb
+ruby script/check_secret_scan.rb .
+(
+  cd cli
+  go mod tidy -diff
+  go mod verify
+  go vet -mod=readonly ./...
+)
