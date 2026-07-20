@@ -3,6 +3,7 @@
 require "test_helper"
 
 require "base64"
+require "cbor"
 require "digest"
 require "nokogiri"
 require "securerandom"
@@ -149,10 +150,21 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
       "malformed-attestation",
       padding: false
     )
+    tpm_attestation_credential = valid_credential.deep_dup
+    tpm_attestation_object = CBOR.decode(
+      Base64.urlsafe_decode64(valid_credential.dig("response", "attestationObject"))
+    )
+    tpm_attestation_object["fmt"] = "tpm"
+    tpm_attestation_object["attStmt"] = {}
+    tpm_attestation_credential["response"]["attestationObject"] = Base64.urlsafe_encode64(
+      CBOR.encode(tpm_attestation_object),
+      padding: false
+    )
 
     {
       "Mismatched passkey" => mismatched_id_credential,
-      "Malformed attestation" => malformed_attestation_credential
+      "Malformed attestation" => malformed_attestation_credential,
+      "TPM attestation" => tpm_attestation_credential
     }.each do |label, attacker_credential|
       assert_no_difference -> { Owner.count }, -> { table_count("owner_credentials") } do
         post "/owner/bootstrap",
