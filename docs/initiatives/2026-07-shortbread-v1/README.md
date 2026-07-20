@@ -4,7 +4,7 @@
 
 **Why a workspace fits:** The work moves through bounded transformations whose inputs and evidence must remain inspectable. GitHub issues and pull requests coordinate work across sessions; this workspace owns the decisions, stage state, harness choices, evidence, and handoff. [`RUN.md`](RUN.md) is authoritative.
 
-**Status:** Product execution is paused while the accepted Stage 05 bounded delivery graph is published. GitHub #2's publish/invite/private-view tracer is integrated; interrupted #3/#4 branches are remote-durable and serialized into recovery units. [`RUN.md`](RUN.md) owns the exact live checkpoint.
+**Status:** Stage 05 is promoted: 38 fresh-context leaf units are published across 12 bounded campaigns, with U01/[#19](https://github.com/ZempTime/shortbread/issues/19) the sole executable frontier. GitHub #2's publish/invite/private-view tracer is integrated; interrupted #3/#4 branches are remote-durable and serialized into recovery units. [`RUN.md`](RUN.md) owns the exact live checkpoint.
 
 ## Execution Model
 

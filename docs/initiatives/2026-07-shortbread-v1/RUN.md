@@ -5,13 +5,13 @@
 | Run | `2026-07-18-shortbread-v1` |
 | Work item | [ZempTime/shortbread](https://github.com/ZempTime/shortbread); direct design and authority conversation |
 | Initializer | Claude Code on Claude Fable 5 (`claude-fable-5`) |
-| Current controller | Codex delivery-replan controller (`ZempTime`) |
+| Current controller | None; the next fresh controller claims C00/U01 |
 | Accepted doctrine baseline | Repo-local MWP with bounded campaigns, fresh-context leaf units, TDD, proportionate independent review, durable pause/recovery, and explicit credential boundary |
 | Repository authority | Implement, review, repair, document, package, and prepare deployment of the accepted Shortbread v1 scope |
 | External authority | Configure the GitHub issue tracker; create/update issues, branches, commits, pull requests, releases, packages, and deployment configuration inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
-| State token | `delivery-replan-publication-pending` |
-| Current state | Product execution is paused. Stage 05 has a locally reviewed bounded delivery graph; interrupted branches are remote-durable; GitHub leaf publication/reconciliation is the only active coordination work |
+| State token | `campaign-ready` |
+| Current state | Stage 05 is promoted. GitHub U01/#19 is the sole executable frontier; all other leaves are blocked and no product implementation is active |
 
 ## Input Snapshot
 
@@ -30,25 +30,25 @@
 | 02 Original ticket map | Complete; superseded for execution only | [Original graph](02_ticket_map/output/2026-07-18-ticket-map.md) / GitHub #2–#17 remain acceptance history |
 | 03 Whole-goal handoff | Historical; superseded | [`GOAL.md`](03_goal_handoff/output/GOAL.md) is retained but must not be relaunched |
 | 04 Original execution | Paused after interrupted attempt | #2 integrated; #3/#4 partial branch evidence preserved under [`04_execution/`](04_execution/) |
-| 05 Delivery replan | Reviewed locally; publication pending | [Bounded campaign/unit graph](05_delivery_replan/output/2026-07-20-delivery-plan.md), [unit contract](05_delivery_replan/output/UNIT-CONTRACT.md), and [tracker](05_delivery_replan/output/tracker.md) |
+| 05 Delivery replan | Complete; U01 is campaign-ready | [Bounded campaign/unit graph](05_delivery_replan/output/2026-07-20-delivery-plan.md), [unit contract](05_delivery_replan/output/UNIT-CONTRACT.md), [published tracker](05_delivery_replan/output/tracker.md), and [frontier #19](https://github.com/ZempTime/shortbread/issues/19) |
 | 99 Harvest | Complete for setup and #2; interrupted-run learning promoted into MWP | [Setup harvest](99_harvest/output/2026-07-18-goal-setup-harvest.md) plus Stage 05 process corrections |
 
 ## Recovery Capsule
 
 | Field | State |
 |---|---|
-| Reconciled | 2026-07-20, after remote preservation and local graph review |
-| Integration branch/head | `main` / `119c6c4` before this coordination change; product code baseline includes merged #2 at `f2e0326` |
+| Reconciled | 2026-07-20, after remote preservation, graph review, GitHub publication, and umbrella reconciliation |
+| Integration branch/head | `main`; product code baseline includes merged #2 at `f2e0326`; Stage 05 coordination is the commit containing this capsule |
 | Release candidate | `ticket-3-releases-rollback` local and remote at `f5943d7`; no PR/review target yet |
 | Auth source evidence | `ticket-4-owner-cli-auth` local and remote at `8fcb22f`; no PR; replay semantically only after U01 |
 | Worktrees | Old `/private/tmp/shortbread-ticket-{3,4}` paths are missing/prunable and are not recovery sources |
-| Dirty state | Coordination files for Stage 05 are being authored on `main`; no product implementation is active |
+| Dirty state | Clean after Stage 05 promotion; no product implementation is active |
 | Collision | Both preserved branches edit `config/routes.rb`; Release branch removes `db/schema.rb` for SQL structure dumps while auth branch edits it |
 | Dependency state | Frozen/audited at `3c40a67`; manifest/lock/tool changes require ADR 0007 exception |
-| Review state | None for the new graph; old ticket #2 verdict remains historical evidence |
-| Reserved surfaces | Root run/tracker/factory docs are exclusive to this replan controller until publication completes |
+| Review state | Stage 05 decomposition passed controller graph/coverage review; U01 has no implementation PR or verdict yet |
+| Reserved surfaces | None until a fresh C00 controller claims U01 and records its durable branch/worktree |
 | True stop | Product-scope/trust/authority change, preservation failure, or unreconcilable tracker mutation—not ordinary graph edits |
-| Next action | Publish Stage 05 leaf issues in dependency order, reconcile #3–#17 as umbrellas, make only U01 `ready-for-agent`, then emit a fresh-context campaign-ready capsule |
+| Next action | A fresh C00 controller reads `AGENTS.md`, `docs/agents/mwp.md`, this capsule, the Stage 05 tracker/unit contract/U01 card, original #3, and ADR 0003; reconciles `ticket-3-releases-rollback` at `f5943d7` onto current `main`; then creates a durable worktree, branch, and draft PR for [U01/#19](https://github.com/ZempTime/shortbread/issues/19). Do not begin U02 before U01 is reviewed and integrated |
 
 ## Campaign Model
 
