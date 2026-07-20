@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+set -u
 
-echo "Walking skeleton pending: phase 2 must implement and prove publish -> invite -> explicit accept -> private Site view." >&2
-exit 1
+app_root=$(cd "$(dirname "$0")/.." && pwd)
+
+if ruby -S bundle exec ruby "$app_root/test/black_box/walking_skeleton.rb" >/dev/null 2>&1; then
+  echo "Walking skeleton passed."
+else
+  echo "Walking skeleton failed." >&2
+  exit 1
+fi

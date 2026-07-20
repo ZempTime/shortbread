@@ -14,6 +14,10 @@ require "action_view/railtie"
 require "action_cable/engine"
 require "rails/test_unit/railtie"
 
+require_relative "../lib/shortbread/hosts"
+require_relative "../lib/shortbread/host_scoped_static"
+require_relative "../lib/shortbread/host_scoped_vite_proxy"
+
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
@@ -27,6 +31,24 @@ module Shortbread
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
+
+    config.hosts = [ Shortbread::Hosts.authorization_pattern ]
+    config.host_authorization = {
+      response_app: ->(_environment) do
+        [ 404, { "Content-Type" => "text/plain; charset=utf-8", "Content-Length" => "0" }, [] ]
+      end
+    }
+    config.middleware.swap ActionDispatch::Static, Shortbread::HostScopedStatic
+
+    initializer "shortbread.host_scoped_vite_proxy", after: "vite_rails.proxy" do |application|
+      if ViteRuby.run_proxy?
+        application.middleware.swap(
+          ViteRuby::DevServerProxy,
+          Shortbread::HostScopedViteProxy,
+          ssl_verify_none: true
+        )
+      end
+    end
 
     # Configuration for the application, engines, and railties goes here.
     #

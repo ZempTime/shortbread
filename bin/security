@@ -12,7 +12,7 @@ if [[ "$ignored_builds" != "No ignored builds." ]]; then
 fi
 bin/licenses
 ruby script/check_dependency_policy.rb
-fnox --config fnox.toml --non-interactive scan --quiet --ignore '.git/**' --ignore 'tmp/**' --ignore 'node_modules/**' --ignore 'anycable.toml' .
+ruby script/check_secret_scan.rb .
 (
   cd cli
   go mod tidy -diff

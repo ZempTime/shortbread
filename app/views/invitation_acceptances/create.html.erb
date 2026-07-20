@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Opening private Site</title>
+    <script nonce="<%= nonce %>">
+      document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("site-handoff").submit();
+      }, { once: true });
+    </script>
+  </head>
+  <body>
+    <form id="site-handoff" hidden method="post" action="<%= site_origin %>/_shortbread/session">
+      <input type="hidden" name="handoff" value="<%= handoff %>">
+    </form>
+  </body>
+</html>

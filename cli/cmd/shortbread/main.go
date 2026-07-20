@@ -1,26 +1,22 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"crypto/rand"
 	"os"
 
-	"github.com/spf13/cobra"
+	"github.com/ZempTime/shortbread/cli/internal/command"
 )
 
 var version = "dev"
 
 func main() {
-	command := &cobra.Command{
-		Use:           "shortbread",
-		Short:         "Publish private websites with Shortbread",
-		SilenceErrors: true,
-		SilenceUsage:  true,
-		Version:       version,
-	}
-	command.SetVersionTemplate("shortbread {{.Version}}\n")
-
-	if err := command.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	exitCode := command.Execute(context.Background(), os.Args[1:], command.Runtime{
+		Version:   version,
+		LookupEnv: os.LookupEnv,
+		Random:    rand.Reader,
+		Stdout:    os.Stdout,
+		Stderr:    os.Stderr,
+	})
+	os.Exit(exitCode)
 }
