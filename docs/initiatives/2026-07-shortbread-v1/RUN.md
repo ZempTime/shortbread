@@ -11,7 +11,7 @@
 | External authority | Configure the GitHub issue tracker; create and update PRD/ticket issues; use branches, commits, pull requests, and releases inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
 | State token | `execution-active` |
-| Current state | #2 implementation is frozen at `5635586`; local and detached clean-checkout gates are green, Standards approved the code, and final fixed-SHA Spec/Security plus evidence rereview remain before integration |
+| Current state | #2 fixed code `0fda8d4` is independently approved on Standards, Spec, and Security/Operations; merge-ready tree `055d448` passed detached clean-checkout CI and the real browser tracer; PR integration is active |
 
 ## Input Snapshot
 
@@ -28,13 +28,13 @@
 | 01 Spec | Complete | [Canonical PRD](01_spec/output/2026-07-18-shortbread-v1-prd.md) published as [GitHub #1](https://github.com/ZempTime/shortbread/issues/1) |
 | 02 Ticket map | Complete | [Reviewed graph](02_ticket_map/output/2026-07-18-ticket-map.md) published as [GitHub #2–#17](02_ticket_map/output/tracker.md); #2 is the initial frontier |
 | 03 Goal handoff | Complete | [Persistent goal](03_goal_handoff/output/GOAL.md), controller runbook, dependency baseline, and [temporary-handoff lifecycle](03_goal_handoff/output/handoff.md) exist |
-| 04 Execution | In progress | #2 dependency freeze approved at `3c40a67`; phase-two implementation frozen at `5635586` with [verification evidence](04_execution/002-walking-skeleton/evidence/phase2-verification.md) and final review/promotion active |
+| 04 Execution | In progress | #2 dependency freeze approved at `3c40a67`; fixed code `0fda8d4` has approved [verification](04_execution/002-walking-skeleton/evidence/phase2-verification.md) and [review evidence](04_execution/002-walking-skeleton/evidence/review-phase2.md); PR integration active |
 | 99 Harvest | Complete for setup | [Setup harvest](99_harvest/output/2026-07-18-goal-setup-harvest.md); implementation tickets repeat the decision |
 
 ## Execution State
 
-- **Implementation checkpoint:** branch `ticket-2-walking-skeleton` contains fixed code checkpoint `5635586`, relative to promotion baseline `606a94f`; its local and detached-clean-checkout CI plus real browser tracer are green.
-- **Tracker:** #2 is the claimed T01 ticket. Its implementation is in final evidence/review promotion; #3 and #4 become the parallel frontier only after #2 integrates.
+- **Implementation checkpoint:** branch `ticket-2-walking-skeleton` contains independently approved code checkpoint `0fda8d4`, relative to promotion baseline `606a94f`; merge-ready tree `055d448` includes current `main` without a tree change and passed detached clean-checkout CI plus the real browser tracer.
+- **Tracker:** #2 is the claimed T01 ticket. Its implementation and final evidence are promotion-ready; #3 and #4 become the parallel frontier only after #2 integrates.
 - **Frontier:** #2, “Publish, invite, and view one private page locally,” remains the sole active integration unit until its reviewed PR merges.
 - **Dependency state:** the approved baseline is scaffolded, audited, frozen, and independently approved at `3c40a67`; manifests and lockfiles are now controller-only exception surfaces.
 - **Deployment apex:** Chris selected `shortbread.chriszempel.com`; provisioning later sets `SHORTBREAD_APEX_HOST` to that value and configures `<slug>.sites.shortbread.chriszempel.com` DNS/TLS. This is recorded on GitHub #13 and needs no credential during local implementation.

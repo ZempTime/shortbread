@@ -6,8 +6,8 @@
 | Branch | `ticket-2-walking-skeleton` |
 | Pinned baseline | `412be84d441325c5e61004da87ec6878e588d7b4` (`Start Shortbread v1 execution`) |
 | Owner | `ZempTime` |
-| Current phase | Phase 2 fixed-SHA review and promotion |
-| State | Behavioral implementation is frozen at `5635586`; full CI, clean-checkout CI, Go race tests, and the real browser tracer are green; final Spec/Security review and documentation rereview remain |
+| Current phase | Phase 2 approved promotion and PR integration |
+| State | Fixed code `0fda8d4` is approved on Standards, Spec, and Security/Operations; merge-ready tree `055d448` is tree-identical and passed detached clean-checkout CI plus the real browser tracer |
 
 ## Inputs
 
@@ -37,6 +37,7 @@ This phase must not create product records, product routes, deployment resources
 - [`evidence/dependency-audit.md`](evidence/dependency-audit.md)
 - [`evidence/review-phase1.md`](evidence/review-phase1.md)
 - [`evidence/phase2-verification.md`](evidence/phase2-verification.md)
+- [`evidence/review-phase2.md`](evidence/review-phase2.md)
 
 ## Controller decisions for phase 2
 
@@ -53,8 +54,8 @@ Stop for review only after a built Go CLI creates the minimum records, safely pu
 
 ## Phase 2 checkpoint
 
-`5635586` (`Complete private publish invitation tracer`) is the fixed implementation checkpoint relative to promotion baseline `606a94f`. It contains the durable Site/Person/Grant/Invitation/Release/Blob model, bootstrap-token Producer API, safe one-file CLI publish path, preview-safe explicit Invitation acceptance, one-use host-bound handoff and Site session, private HTML serving, exact host isolation, strict redaction/security checks, and the built-CLI-to-real-Chrome black-box tracer.
+`0fda8d4` is the fixed reviewed code checkpoint relative to promotion baseline `606a94f`. It contains the durable Site/Person/Grant/Invitation/Release/Blob model, bootstrap-token Producer API, safe one-file CLI publish path, preview-safe explicit Invitation acceptance, one-use host-bound handoff and Site session, private HTML serving, exact host isolation, Rack-conformant denial boundaries, strict redaction/security checks, and the built-CLI-to-real-Chrome black-box tracer. Merge commit `055d448` incorporates current `main` without changing that tree.
 
 The dependency freeze remains intact: no dependency/tool version, source, inventory, lock entry, or governed manifest digest changed in Phase 2. The frozen `mise.toml` therefore retains its historical “currently pending” walking-skeleton description even though the task is now implemented; this RUN file, not that governed setup label, owns live execution status.
 
-Independent Standards review approved the code at `5635586` after all implementation blocker and should-fix findings were repaired. This documentation follow-up resolves its remaining process blocker. Fixed-SHA Spec and Security/Operations reviews are the remaining promotion gates; their identities and verdicts will be appended to the phase-two review record before integration.
+Independent Standards, Spec, and Security/Operations reviews approve `0fda8d4` with no remaining blocker or should-fix. Controller CI, detached clean-checkout CI, focused host/Rack probes, and the real browser tracer are green. The named verdicts, every blocking repair, exact gate counts, clean-tree comparison, and harvest disposition are recorded in [`evidence/review-phase2.md`](evidence/review-phase2.md). The remaining action is reviewed PR integration.

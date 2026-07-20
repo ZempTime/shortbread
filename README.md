@@ -8,7 +8,7 @@ Shortbread hosts, gates, and collects. It never builds Bundle content and never 
 
 ## Status
 
-The dependency baseline is audited and frozen. The first vertical product tracer—publish one private page, invite a Viewer, explicitly accept, and read it on the Site host—is implemented and in fixed-SHA review before integration. The product and delivery control plane are driving the autonomous controller run:
+The dependency baseline is audited and frozen. The first vertical product tracer—publish one private page, invite a Viewer, explicitly accept, and read it on the Site host—is implemented, independently approved, and awaiting PR integration. The product and delivery control plane are driving the autonomous controller run:
 
 - [accepted v1 PRD](docs/initiatives/2026-07-shortbread-v1/01_spec/output/2026-07-18-shortbread-v1-prd.md) — [GitHub #1](https://github.com/ZempTime/shortbread/issues/1)
 - [tracer-ticket graph](docs/initiatives/2026-07-shortbread-v1/02_ticket_map/output/2026-07-18-ticket-map.md) — initial frontier [GitHub #2](https://github.com/ZempTime/shortbread/issues/2)
