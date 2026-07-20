@@ -1,5 +1,7 @@
 # Persistent Goal: Ship Shortbread v1
 
+> **Superseded for execution on 2026-07-20.** This whole-initiative Ultra goal is retained as historical evidence and must not be relaunched. Use the bounded campaign graph and fresh-context start packet in [`05_delivery_replan/output/2026-07-20-delivery-plan.md`](../../05_delivery_replan/output/2026-07-20-delivery-plan.md), with live state from the root [`RUN.md`](../../RUN.md).
+
 **Recommended launch profile:** Start a fresh Codex/Work session in **Ultra** when available, then create a persistent `/goal` from the objective below. Ultra is recommended for the controller's parallel decomposition/review work; bounded workers need not all use Ultra.
 
 ## Copy-paste goal objective

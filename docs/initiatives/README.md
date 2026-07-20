@@ -4,4 +4,4 @@ Repo-local, human-reviewable workbenches holding stage contracts and intermediat
 
 | Workspace | Purpose | Status |
 |---|---|---|
-| [`2026-07-shortbread-v1/`](2026-07-shortbread-v1/README.md) | Prepare and drive the autonomous Shortbread v1 build | Handoff ready; implementation not started |
+| [`2026-07-shortbread-v1/`](2026-07-shortbread-v1/README.md) | Deliver credential-ready Shortbread v1 through bounded campaigns | Delivery replan publication in progress; product execution paused |

@@ -4,7 +4,7 @@
 
 **Why a workspace fits:** The work moves through bounded transformations whose inputs and evidence must remain inspectable. GitHub issues and pull requests coordinate work across sessions; this workspace owns the decisions, stage state, harness choices, evidence, and handoff. [`RUN.md`](RUN.md) is authoritative.
 
-**Status:** Execution active. GitHub #2's publish/invite/private-view tracer is integrated through PR #18. GitHub #3 and #4 are the parallel implementation frontier. [`RUN.md`](RUN.md) owns the exact live checkpoint.
+**Status:** Product execution is paused while the accepted Stage 05 bounded delivery graph is published. GitHub #2's publish/invite/private-view tracer is integrated; interrupted #3/#4 branches are remote-durable and serialized into recovery units. [`RUN.md`](RUN.md) owns the exact live checkpoint.
 
 ## Execution Model
 
@@ -12,8 +12,9 @@
 2. Stage 01 creates the canonical PRD and publishes its parent GitHub issue.
 3. Stage 02 creates a dependency-aware tracer-ticket map and publishes it. Chris has delegated routine ticket approval to the controller.
 4. Stage 03 packages the authority envelope, controller loop, terminal criteria, and exact goal handoff.
-5. The persistent controller selects the unblocked frontier, creates the smallest justified slice workspace and harness, delegates independent work, applies TDD, reviews against standards and spec, repairs findings, records evidence, and advances.
-6. Stage 99 harvests only demonstrated reusable learning into `agents/`; product facts stay in product artifacts.
+5. Stage 04 records the original execution attempt: #2 integrated and partial #3/#4 branch evidence preserved.
+6. Stage 05 supersedes the original execution graph with fresh-context leaf units grouped into bounded campaigns; one campaign controller completes or pauses after at most four integrations.
+7. Stage 99 harvests only demonstrated reusable learning into `agents/`; product facts stay in product artifacts.
 
 The workspaces follow Shortbread's repo-local MWP method: one stage has one cognitive job, explicit inputs, named edit surfaces, verification, and a stop condition. See [`docs/agents/mwp.md`](../../agents/mwp.md).
 
@@ -27,6 +28,7 @@ For current decisions, read the [reconciled framing contract](00_framing/output/
 - [`inputs/design-notes.md`](inputs/design-notes.md) — initial architecture synthesis
 - [`inputs/chris-framing.md`](inputs/chris-framing.md) — detailed human framing
 - [`inputs/2026-07-18-goal-addendum.md`](inputs/2026-07-18-goal-addendum.md) — open-source, factory, deployment, evidence, and autonomy decisions
+- [`inputs/2026-07-20-delivery-replan-addendum.md`](inputs/2026-07-20-delivery-replan-addendum.md) — accepted bounded-campaign recovery and credential-ready delivery corrections
 
 ## Stage Contracts
 
@@ -34,6 +36,7 @@ For current decisions, read the [reconciled framing contract](00_framing/output/
 - [`01_spec/CONTEXT.md`](01_spec/CONTEXT.md)
 - [`02_ticket_map/CONTEXT.md`](02_ticket_map/CONTEXT.md)
 - [`03_goal_handoff/CONTEXT.md`](03_goal_handoff/CONTEXT.md)
+- [`05_delivery_replan/CONTEXT.md`](05_delivery_replan/CONTEXT.md)
 - [`99_harvest/CONTEXT.md`](99_harvest/CONTEXT.md)
 
 ## Safety Boundary

@@ -2,18 +2,20 @@
 
 MWP is Shortbread's repo-local Model Workspace Protocol for agent work that must survive context changes, parallel execution, and human inspection. It adds only the process needed to turn a bounded input into verified output; it is not an application architecture or a substitute for tests.
 
+MWP distinguishes a long-lived **initiative** from a bounded **campaign** and one PR-sized **delivery unit**. An initiative may span many fresh controller contexts. A campaign normally integrates one to four leaf units and then completes or emits a pause capsule; continuity is not permission to give one model goal an entire product.
+
 ## Ownership
 
 | Surface | Owns |
 |---|---|
 | GitHub issue | Cross-session intent, acceptance, blockers, assignment, and status |
-| Pull request | One reviewable implementation attempt and its checks |
+| Pull request | One live reviewable implementation attempt, fixed heads, checks, and dispositions |
 | Initiative workspace | Inputs, decisions, stage contracts, harnesses, evidence, review, and handoff |
 | `RUN.md` | Authoritative live state, authority, frontier, stops, and promotion history |
 | Code and executable tests | Implemented behavior |
 | `agents/` | Reusable execution factory |
 
-No single surface replaces another. In particular, a branch, merge, label, or folder cannot prove that a cognitive stage ran; the `RUN.md` and its evidence must say so.
+No single surface replaces another, but they must share stable work/unit identifiers and freshness metadata. A branch, merge, label, or folder cannot prove that a cognitive stage ran; the `RUN.md` and its linked evidence must say so without copying every detail from the owning surface.
 
 ## Workspace shape
 
@@ -45,16 +47,28 @@ Plain Markdown is preferred. Introduce a script, test fixture, browser capture, 
 
 ## Controller loop
 
-1. Rehydrate from `AGENTS.md`, the active `RUN.md`, the canonical PRD/ADRs, and tracker state.
-2. Reconcile stale or conflicting state before assigning work.
-3. Select only unblocked frontier tickets. Give each implementation agent an isolated branch/worktree and a bounded contract.
-4. Serialize shared schema, dependency manifests/lockfiles, central routing, and release-state edits; parallelize genuinely independent work. Only the controller edits dependency surfaces after the approved bootstrap.
-5. Require TDD at the agreed behavioral seam, regular targeted checks, then the full relevant suite.
-6. Run independent Standards and Spec reviews. The controller resolves findings, reruns evidence, and alone decides integration.
-7. Persist the result in `RUN.md` and GitHub, close the completed edge, and recompute the frontier.
-8. Record a harvest decision. Promote only reusable, evidenced process knowledge to `agents/`; keep product knowledge with the product.
+1. Rehydrate from `AGENTS.md`, the active `RUN.md` resume capsule, campaign tracker, active unit contract, and only the PRD/ADR excerpts relevant to that unit. Read the full corpus when reconciling scope or terminal coverage, not by default on every worker/reviewer reset.
+2. Reconcile local/remote heads, dirty state, PR/check/review target, assignments, worktrees, locks, and stale projections before assigning work.
+3. Select only unblocked leaf units. Give each implementation agent an isolated branch/worktree, fixed baseline, one behavioral outcome, evidence contract, and explicit central edit reservations.
+4. Open a draft PR at the first green checkpoint and push every meaningful green checkpoint. Record local and remote durability separately.
+5. Serialize shared schema, dependency manifests/lockfiles, central routing, CLI registration, generated assets, release/deployment state, and root docs unless a concrete file/module reservation proves independence.
+6. Require TDD at the agreed behavioral seam, regular targeted checks, and the full relevant suite at the fixed review candidate and proportionately before integration.
+7. Run one author-independent Standards/Spec review for an ordinary bounded diff; add independent security/data/operations/supply-chain specialists for the named risk. The controller resolves findings and alone decides integration.
+8. Link one durable evidence/PR record from `RUN.md` and GitHub, close the leaf, update its acceptance umbrella, recompute the frontier, and record a harvest decision.
 
 Subagents report uncertainty and failure to the controller. The controller monitors, interrupts, reassigns, or splits work as needed and keeps state durable enough for a fresh session to resume.
+
+## Fit and pause
+
+A delivery unit must fit one fresh implementation context and one fresh review context. If it grows across multiple actor outcomes, undeclared shared hotspots, or an incoherent diff, stop at a remotely durable green checkpoint and split by observable behavior. Line/file counts are warning signals rather than acceptance criteria.
+
+A pause is a successful protocol transition, not completion. Its capsule records:
+
+- initiative, campaign, unit, state, controller/worker, and reconciliation time;
+- integration baseline, local branch/SHA/dirty state, remote branch/SHA/PR, and fixed review verdict;
+- blockers, reserved surfaces, current authority/true stop, one exact next action, and evidence links.
+
+Temporary worktree paths are convenience state. A resume cannot depend on them existing.
 
 ## Approval model
 
@@ -64,7 +78,7 @@ Authority is still bounded. Missing credentials are inputs; they are not invitat
 
 ## Evidence and completion
 
-Evidence should be reproducible and proportionate to risk: commands and results, behavioral tests, screenshots from the real app, provider command contracts, review findings and repairs, links to commits/PRs, and a clean-room rehearsal. A controller reports completion only when the goal's terminal criteria are observed; nearing a context or token limit is never completion.
+Evidence should be reproducible and proportionate to risk: commands and results, behavioral tests, screenshots from the real app, provider command contracts, review findings and repairs, links to commits/PRs, and a clean-room rehearsal. Keep one canonical evidence record or CI artifact per fixed checkpoint; other surfaces link and summarize rather than copying SHAs/test counts into competing prose. A controller reports completion only when the unit/campaign/initiative terminal criteria are observed. Nearing a context, time, or token budget triggers a pause capsule, never a false completion.
 
 ## Factory harvest
 

@@ -5,15 +5,19 @@ description: Review a fixed implementation diff independently for repository sta
 
 # Code Review
 
-Run two read-only reviews in parallel from the same fixed point. Review is evidence for repair and integration, not a substitute for tests.
+Review both Standards and Spec axes read-only from the same fixed point. Review is evidence for repair and integration, not a substitute for tests.
 
 ## Fix the review target
 
 The controller supplies the ticket, PRD/ADRs, baseline SHA or merge-base, head SHA, and verification evidence. Refuse an ambiguous moving target. Review only the diff and relevant context; do not edit the implementation branch.
 
-## Parallel axes
+## Review topology
 
-Spawn two independent review agents:
+For an ordinary bounded leaf, one reviewer independent of the implementation author may cover both axes in one pass. A controller may use two reviewers when the diff is unusually broad or independent challenge is valuable. Auth, sessions, authorization, deletion, data integrity, secrets, infrastructure, deployment, release, and final-composition work requires the named independent specialist in addition to the general review.
+
+Reviewers do not recursively delegate. A reviewer who authors a repair loses approval eligibility for the repaired head.
+
+## Axes
 
 ### Standards review
 
@@ -35,7 +39,7 @@ Read the parent PRD, ticket, ADRs, and acceptance mapping. Inspect whether the d
 - updates required docs, screenshots, setup, CLI/API contracts, and evidence;
 - introduces behavior or dependencies the specification did not authorize.
 
-For auth, sessions, authorization, deletion, data integrity, secrets, infrastructure, or deployment, the controller also assigns an independent security/operations review. It may run alongside the two axes.
+The specialist review may run alongside the general axes on the same fixed target.
 
 ## Finding format
 
@@ -49,6 +53,6 @@ Each finding names the file/line or exact evidence, expected behavior/rule, cons
 
 ## Reconcile
 
-The controller combines both reports without voting them away. Every blocker is fixed or rejected with concrete contradictory evidence. Repairs rerun targeted/full checks and both relevant review axes. The implementation author cannot be the sole approving reviewer.
+The controller combines all axes without voting blockers away. Every blocker is fixed or rejected with concrete contradictory evidence. Repairs rerun targeted checks, the full suite when the repair changes full-suite risk, and only the affected review axes unless the target's whole risk surface changed. The implementation author cannot approve their own work.
 
-Record review agent identities, fixed SHAs, findings, dispositions, rerun evidence, and final controller integration decision in the PR/workspace.
+Record reviewer identities/eligibility, fixed SHAs, findings, dispositions, rerun evidence, residual risks, and final controller integration decision in one PR/evidence record. Other documents link to it instead of copying the same counts and SHAs.

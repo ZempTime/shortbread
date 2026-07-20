@@ -30,6 +30,8 @@ Interactive work normally presents the draft graph for operator approval before 
 
 Avoid one ticket per technical layer, speculative abstraction tickets, vague “finish integration” work, and false parallelism around schema, routes, dependency manifests, lockfiles, root docs, generated assets, or release state.
 
+Group leaf tickets into bounded campaigns of normally one to four integrations. A campaign is a fresh controller goal with an exit/pause capsule; it is not permission to execute the whole initiative. Treat file/module/resource reservations as graph constraints alongside product blockers.
+
 ## Controller review
 
 Before publication, independently challenge:
@@ -40,6 +42,9 @@ Before publication, independently challenge:
 - setup/security/docs deferred into an unbounded final bucket;
 - dependency additions after the approved bootstrap;
 - tickets that cannot demonstrate value when complete.
+- campaign goals that still require one controller to carry the whole initiative;
+- recovery state that depends on a temporary worktree or local-only commit;
+- duplicated status/evidence that will predictably become stale.
 
 Revise until the graph is executable. Record controller approval in the local output.
 

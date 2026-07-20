@@ -5,77 +5,81 @@
 | Run | `2026-07-18-shortbread-v1` |
 | Work item | [ZempTime/shortbread](https://github.com/ZempTime/shortbread); direct design and authority conversation |
 | Initializer | Claude Code on Claude Fable 5 (`claude-fable-5`) |
-| Current controller | Codex persistent `ship-goal` controller (`ZempTime`) |
-| Accepted doctrine baseline | The repo-local MWP staged-workspace method, combined with `to-spec` → `to-tickets` → per-ticket implementation, TDD, and review |
+| Current controller | Codex delivery-replan controller (`ZempTime`) |
+| Accepted doctrine baseline | Repo-local MWP with bounded campaigns, fresh-context leaf units, TDD, proportionate independent review, durable pause/recovery, and explicit credential boundary |
 | Repository authority | Implement, review, repair, document, package, and prepare deployment of the accepted Shortbread v1 scope |
-| External authority | Configure the GitHub issue tracker; create and update PRD/ticket issues; use branches, commits, pull requests, and releases inside `ZempTime/shortbread` as required by the goal |
+| External authority | Configure the GitHub issue tracker; create/update issues, branches, commits, pull requests, releases, packages, and deployment configuration inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
-| State token | `execution-active` |
-| Current state | #2 merged through PR #18 at `f2e0326`; #3 Release/rollback and #4 Owner/remote-CLI auth are claimed as the parallel frontier on that product baseline |
+| State token | `delivery-replan-publication-pending` |
+| Current state | Product execution is paused. Stage 05 has a locally reviewed bounded delivery graph; interrupted branches are remote-durable; GitHub leaf publication/reconciliation is the only active coordination work |
 
 ## Input Snapshot
 
 - [`inputs/request.md`](inputs/request.md) preserves the original request and attribution.
 - [`inputs/design-notes.md`](inputs/design-notes.md) preserves the initial architecture synthesis.
 - [`inputs/chris-framing.md`](inputs/chris-framing.md) is Chris's detailed framing contribution.
-- [`inputs/2026-07-18-goal-addendum.md`](inputs/2026-07-18-goal-addendum.md) records the later decisions about open source, the CLI, deployment, the agent factory, evidence, and autonomous execution.
+- [`inputs/2026-07-18-goal-addendum.md`](inputs/2026-07-18-goal-addendum.md) records the open-source, CLI, deployment, evidence, and autonomy decisions.
+- [`inputs/2026-07-20-delivery-replan-addendum.md`](inputs/2026-07-20-delivery-replan-addendum.md) records Chris's acceptance of the recovery, bounded-campaign, and credential-ready corrections without changing product scope.
 
 ## Stage Status
 
 | Stage | Status | Evidence |
 |---|---|---|
-| 00 Framing | Complete | [Framing contract](00_framing/output/2026-07-18-framing-contract.md), draft PRD, glossary, and ADRs verified |
-| 01 Spec | Complete | [Canonical PRD](01_spec/output/2026-07-18-shortbread-v1-prd.md) published as [GitHub #1](https://github.com/ZempTime/shortbread/issues/1) |
-| 02 Ticket map | Complete | [Reviewed graph](02_ticket_map/output/2026-07-18-ticket-map.md) published as [GitHub #2–#17](02_ticket_map/output/tracker.md); #2 is the initial frontier |
-| 03 Goal handoff | Complete | [Persistent goal](03_goal_handoff/output/GOAL.md), controller runbook, dependency baseline, and [temporary-handoff lifecycle](03_goal_handoff/output/handoff.md) exist |
-| 04 Execution | In progress | #2 integrated through [PR #18](https://github.com/ZempTime/shortbread/pull/18); #3 and #4 claimed with bounded workspaces and implementation active |
-| 99 Harvest | Complete for setup and #2 | [Setup harvest](99_harvest/output/2026-07-18-goal-setup-harvest.md); #2 retained four candidates without changing the shared factory pending recurrence/terminal harvest |
+| 00 Framing | Complete | [Framing contract](00_framing/output/2026-07-18-framing-contract.md), draft PRD, glossary, and ADRs |
+| 01 Spec | Complete | [Canonical PRD](01_spec/output/2026-07-18-shortbread-v1-prd.md) / [GitHub #1](https://github.com/ZempTime/shortbread/issues/1) |
+| 02 Original ticket map | Complete; superseded for execution only | [Original graph](02_ticket_map/output/2026-07-18-ticket-map.md) / GitHub #2–#17 remain acceptance history |
+| 03 Whole-goal handoff | Historical; superseded | [`GOAL.md`](03_goal_handoff/output/GOAL.md) is retained but must not be relaunched |
+| 04 Original execution | Paused after interrupted attempt | #2 integrated; #3/#4 partial branch evidence preserved under [`04_execution/`](04_execution/) |
+| 05 Delivery replan | Reviewed locally; publication pending | [Bounded campaign/unit graph](05_delivery_replan/output/2026-07-20-delivery-plan.md), [unit contract](05_delivery_replan/output/UNIT-CONTRACT.md), and [tracker](05_delivery_replan/output/tracker.md) |
+| 99 Harvest | Complete for setup and #2; interrupted-run learning promoted into MWP | [Setup harvest](99_harvest/output/2026-07-18-goal-setup-harvest.md) plus Stage 05 process corrections |
 
-## Execution State
+## Recovery Capsule
 
-- **Integrated tracer:** [PR #18](https://github.com/ZempTime/shortbread/pull/18) merged #2 at `f2e03262a0da76e30ff105a51b775055dba5037e`; issue #2 is closed and its temporary worktrees/branch are removed.
-- **Tracker:** #3 and #4 are assigned to `ZempTime` and labeled `ready-for-agent`; their controller claims cite the merged product baseline and frozen dependency policy.
-- **Frontier:** #3, “Republish immutable Releases and roll back safely,” and #4, “Secure the Owner and remote Producer control plane,” may execute in parallel under separate worktrees.
-- **Ownership:** #3 owns Release/Manifest/publish/current-pointer/rollback behavior. #4 owns Owner/WebAuthn/device authorization/API tokens/CLI profiles and keyring behavior. Shared API base and CLI transport seams require explicit coordination before edits.
-- **Dependency state:** the approved baseline is scaffolded, audited, frozen, and independently approved at `3c40a67`; manifests and lockfiles are now controller-only exception surfaces.
-- **Deployment apex:** Chris selected `shortbread.chriszempel.com`; provisioning later sets `SHORTBREAD_APEX_HOST` to that value and configures `<slug>.sites.shortbread.chriszempel.com` DNS/TLS. This is recorded on GitHub #13 and needs no credential during local implementation.
-- **External input:** no credential is requested for #3 or #4 local implementation; the consolidated credential ceremony remains owned by #17.
+| Field | State |
+|---|---|
+| Reconciled | 2026-07-20, after remote preservation and local graph review |
+| Integration branch/head | `main` / `119c6c4` before this coordination change; product code baseline includes merged #2 at `f2e0326` |
+| Release candidate | `ticket-3-releases-rollback` local and remote at `f5943d7`; no PR/review target yet |
+| Auth source evidence | `ticket-4-owner-cli-auth` local and remote at `8fcb22f`; no PR; replay semantically only after U01 |
+| Worktrees | Old `/private/tmp/shortbread-ticket-{3,4}` paths are missing/prunable and are not recovery sources |
+| Dirty state | Coordination files for Stage 05 are being authored on `main`; no product implementation is active |
+| Collision | Both preserved branches edit `config/routes.rb`; Release branch removes `db/schema.rb` for SQL structure dumps while auth branch edits it |
+| Dependency state | Frozen/audited at `3c40a67`; manifest/lock/tool changes require ADR 0007 exception |
+| Review state | None for the new graph; old ticket #2 verdict remains historical evidence |
+| Reserved surfaces | Root run/tracker/factory docs are exclusive to this replan controller until publication completes |
+| True stop | Product-scope/trust/authority change, preservation failure, or unreconcilable tracker mutation—not ordinary graph edits |
+| Next action | Publish Stage 05 leaf issues in dependency order, reconcile #3–#17 as umbrellas, make only U01 `ready-for-agent`, then emit a fresh-context campaign-ready capsule |
+
+## Campaign Model
+
+- The initiative persists through v1; one `ship-goal` controller owns one campaign of at most four leaf integrations.
+- The [Stage 05 delivery plan](05_delivery_replan/output/2026-07-20-delivery-plan.md) is canonical for executable units and edges.
+- The original issues #3–#17 own acceptance history; Stage 05 leaves own execution. Closing a leaf does not close its umbrella until every mapped acceptance is integrated.
+- A leaf starts from its GitHub issue, [`UNIT-CONTRACT.md`](05_delivery_replan/output/UNIT-CONTRACT.md), relevant card, linked PRD/ADRs, and current resume capsule—not the superseded whole-v1 goal.
+- Schema, root routes, CLI registration, injected UI/service worker, dependency files, generated screenshots, release/deployment state, root docs, and `agents/` are serialized unless the controller records concrete non-overlap.
+- Every campaign ends with integration evidence or an MWP pause capsule. `execution-active` is forbidden when no controller is running.
+
+## Credential-Ready Terminal Boundary
+
+Before live credentials are requested, the repository must have reviewed app/CLI artifacts, production-shaped local rehearsal, credential-free plan, fake-provider apply/resume/deploy/doctor evidence, complete example/screenshots/docs, clean-clone proof, holistic trust audit, and one exact Operator-run ceremony.
+
+The Operator supplies provider accounts/domain, region/plan choices, billing/legal acceptance, and least-privilege credentials only through the direct safe ingress. The setup program creates/updates namespaced manifest resources, configures secrets/DNS/TLS/processes, migrates, waits for health, and emits redacted doctor/smoke status. Credential absence may leave a truthful credential-ready repository; it cannot be represented as a live smoke.
 
 ## Authority Envelope
 
-Chris has authorized a top-level controller to continue without routine approval through specification, decomposition, implementation, review, repair, documentation, GitHub coordination, packaging, and deployment preparation. The controller may delegate and run independent work in parallel when dependency edges permit. It may approve subordinate-agent plans and outputs, create problem-specific harnesses, and revise tickets when evidence requires it.
+Chris has authorized a top-level controller to continue without routine approval through decomposition, GitHub coordination, implementation, review, repair, documentation, packaging, and deployment preparation of the accepted PRD. The controller may choose reversible implementation details and fix ordinary failures inside the declared campaign.
 
-Starting the persistent goal is Chris's single approval of the canonical PRD, published initial graph, dependency baseline, and this authority envelope. Skills and subordinate agents treat controller sign-off as satisfying routine gates inside this envelope and report uncertainty to the controller rather than asking Chris again.
+Within this repository and GitHub project, the controller may create/edit/move/remove recoverable project files; install/run project dependencies/services/tests/browsers/build/security tools; manage issues/labels/branches/commits/PRs/releases/packages/deployment configuration; merge reviewed green leaf PRs; and prepare or apply the documented reference deployment using safely supplied credentials when the runtime can keep values out of model/tool logs.
 
-Within this repository and its GitHub project, the controller is pre-authorized to:
-
-- create, edit, move, or remove project files when the change is recoverable through Git and advances the accepted PRD;
-- install project dependencies, run local services, tests, browsers, build tools, and security checks;
-- create and update issues, labels, branches, commits, pull requests, releases, packages, and deployment configuration;
-- merge reviewed project pull requests when required checks pass and the change satisfies its ticket;
-- provision or update the reference deployment using credentials Chris supplies, provided the action matches the documented plan and does not delete an existing production resource;
-- choose reversible implementation details inside accepted ADR and ticket boundaries;
-- fix review findings and continue to the next unblocked slice without asking Chris.
-
-The controller must stop only when:
-
-1. a required credential, account grant, DNS delegation, provider confirmation, or billing authorization is unavailable;
-2. an action would destroy or irreversibly migrate existing external data or infrastructure and no tested recovery path exists;
-3. evidence requires changing a trust promise, accepted ADR, permanent product boundary, license, repository visibility, or scope beyond Shortbread v1;
-4. a third-party decision or outage prevents meaningful progress after safe alternatives are exhausted;
-5. the goal's terminal criteria are met.
-
-Missing credentials are an input boundary, not a design approval gate: prepare everything else, produce the exact setup step and requested value, and continue any independent work. Never print, commit, transmit to agents, or place credentials in issue/PR text. The controller may not modify unrelated repositories, charge for new services, weaken security to pass a check, publish private fixture content, or delete production resources merely because those actions would be expedient.
+The controller stops for missing external authority/input at the live boundary; irreversible/destructive existing-resource action without proven recovery; paid/legal/account/domain commitment; a required change to the trust promise, accepted ADR, MIT/public/single-Owner/invite-only/reference-provider scope; or a persistent third-party blocker after safe alternatives. It may not weaken security, expose credentials/private content/Viewer PII, add proprietary product dependencies, contact real Viewers, charge for services, or delete existing production resources merely for expedience.
 
 ## Promotion Rule
 
-Each stage must satisfy its `Verify` section and update this file before promotion. A folder, branch, issue label, or merged pull request does not prove that a stage ran. The setup run ends only when the copy-paste goal and temporary handoff both reference the same canonical PRD, ticket graph, controller contract, and credential boundary.
-
-Implementation begins under the persistent goal, not by silently extending this setup run. During implementation, each ticket receives the smallest workspace and harness justified by its uncertainty; ceremonial empty stages are forbidden.
+Stage 05 promotes only after local graph review, full PRD coverage, GitHub leaf publication, umbrella reconciliation, one accurate frontier, and agreement between this file and the tracker. Product execution resumes in a fresh context; this replan controller does not silently continue into U01 implementation.
 
 ## Limitations
 
-- A local private template was reviewed during setup only. Its generic Rails/Inertia, authentication, testing, container, and deployment patterns informed the checked-in baseline; the clean implementation run cannot depend on access to that template or copy its product behavior or manual infrastructure steps as requirements.
-- Live provider verification needs operator-supplied Northflank, PlanetScale, Cloudflare R2, DNS, and GitHub credentials. Clean-room and command-contract verification must run without them.
-- The public demonstration is a committed example bundle, repeatable screenshot evidence, and explanatory documentation. Anonymous public sites remain outside v1 unless the PRD is explicitly reopened.
-- Renaming the local checkout directory is outside repository version control and is not required for the goal; the product, repository, package, and CLI names are `shortbread`.
+- Current provider APIs, capabilities, plan choices, and official deployment guidance must be reverified from primary provider documentation inside U04/U31/U32.
+- Only macOS arm64 has exercised the frozen dependency/tool bootstrap so far; artifact/platform claims remain unverified until U28–U30.
+- Live Northflank, PlanetScale, Cloudflare R2, DNS, and GitHub credentials are deliberately absent from all current evidence.
+- The public demonstration remains a synthetic invite-only Site; anonymous public Sites stay outside v1.
