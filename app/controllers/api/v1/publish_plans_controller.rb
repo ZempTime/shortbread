@@ -32,6 +32,7 @@ module Api
         {
           id: publish_plan.id,
           state: publish_plan.state,
+          delta: Publishing.delta_for(publish_plan).counts,
           uploads: missing_entries(publish_plan).map { |entry| upload_payload(publish_plan, entry) },
           finalize_url: "/api/v1/publish-plans/#{publish_plan.id}/finalize"
         }
