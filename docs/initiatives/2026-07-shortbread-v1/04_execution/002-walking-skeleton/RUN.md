@@ -55,6 +55,6 @@ Stop for review only after a built Go CLI creates the minimum records, safely pu
 
 `5635586` (`Complete private publish invitation tracer`) is the fixed implementation checkpoint relative to promotion baseline `606a94f`. It contains the durable Site/Person/Grant/Invitation/Release/Blob model, bootstrap-token Producer API, safe one-file CLI publish path, preview-safe explicit Invitation acceptance, one-use host-bound handoff and Site session, private HTML serving, exact host isolation, strict redaction/security checks, and the built-CLI-to-real-Chrome black-box tracer.
 
-The dependency freeze remains intact: no dependency/tool version, source, inventory, or lock entry changed in Phase 2. The controller-owned `mise.toml` follow-up changes only the now-stale walking-skeleton task description from pending to available.
+The dependency freeze remains intact: no dependency/tool version, source, inventory, lock entry, or governed manifest digest changed in Phase 2. The frozen `mise.toml` therefore retains its historical “currently pending” walking-skeleton description even though the task is now implemented; this RUN file, not that governed setup label, owns live execution status.
 
 Independent Standards review approved the code at `5635586` after all implementation blocker and should-fix findings were repaired. This documentation follow-up resolves its remaining process blocker. Fixed-SHA Spec and Security/Operations reviews are the remaining promotion gates; their identities and verdicts will be appended to the phase-two review record before integration.
