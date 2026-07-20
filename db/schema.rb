@@ -27,8 +27,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
     t.index ["api_token_id", "key_digest"], name: "index_api_idempotency_records_on_api_token_id_and_key_digest", unique: true
     t.index ["api_token_id"], name: "index_api_idempotency_records_on_api_token_id"
     t.check_constraint "key_digest::text ~ '^[0-9a-f]{64}$'::text AND request_fingerprint::text ~ '^[0-9a-f]{64}$'::text", name: "api_idempotency_records_digest_format"
-    t.check_constraint "response_status >= 200 AND response_status <= 599", name: "api_idempotency_records_response_status"
     t.check_constraint "operation::text = ANY (ARRAY['sites:create'::character varying, 'people:create'::character varying, 'grants:create'::character varying, 'invitations:create'::character varying, 'releases:rollback'::character varying]::text[])", name: "api_idempotency_records_safe_operation"
+    t.check_constraint "response_status >= 200 AND response_status <= 599", name: "api_idempotency_records_response_status"
   end
 
   create_table "api_rate_limit_buckets", force: :cascade do |t|
@@ -57,9 +57,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
     t.datetime "updated_at", null: false
     t.index ["owner_id"], name: "index_api_tokens_on_owner_id"
     t.index ["token_digest"], name: "index_api_tokens_on_token_digest", unique: true
-    t.check_constraint "octet_length(label::text) >= 1 AND octet_length(label::text) <= 100 AND octet_length(token_hint::text) >= 4 AND octet_length(token_hint::text) <= 16", name: "api_tokens_display_fields_length"
     t.check_constraint "jsonb_typeof(scopes) = 'array'::text AND scopes <@ '[\"access:read\", \"access:write\", \"feedback:read\", \"invitations:read\", \"invitations:write\", \"people:read\", \"people:write\", \"publish:write\", \"receipts:read\", \"releases:read\", \"releases:rollback\", \"sites:read\", \"sites:write\"]'::jsonb AND jsonb_array_length(scopes) >= 1 AND jsonb_array_length(scopes) <= 13", name: "api_tokens_scopes_array"
     t.check_constraint "kind::text = ANY (ARRAY['interactive'::character varying, 'automation'::character varying]::text[])", name: "api_tokens_kind"
+    t.check_constraint "octet_length(label::text) >= 1 AND octet_length(label::text) <= 100 AND octet_length(token_hint::text) >= 4 AND octet_length(token_hint::text) <= 16", name: "api_tokens_display_fields_length"
     t.check_constraint "token_digest::text ~ '^[0-9a-f]{64}$'::text", name: "api_tokens_token_digest_format"
   end
 
@@ -95,8 +95,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
     t.index ["owner_id"], name: "index_device_authorizations_on_owner_id"
     t.index ["user_code_digest"], name: "index_device_authorizations_on_user_code_digest", unique: true
     t.check_constraint "device_code_digest::text ~ '^[0-9a-f]{64}$'::text AND user_code_digest::text ~ '^[0-9a-f]{64}$'::text", name: "device_authorizations_digest_format"
-    t.check_constraint "profile_name::text ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'::text", name: "device_authorizations_profile_name_format"
     t.check_constraint "jsonb_typeof(scopes) = 'array'::text AND scopes <@ '[\"access:read\", \"access:write\", \"feedback:read\", \"invitations:read\", \"invitations:write\", \"people:read\", \"people:write\", \"publish:write\", \"receipts:read\", \"releases:read\", \"releases:rollback\", \"sites:read\", \"sites:write\"]'::jsonb AND jsonb_array_length(scopes) >= 1 AND jsonb_array_length(scopes) <= 13", name: "device_authorizations_scopes_array"
+    t.check_constraint "profile_name::text ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'::text", name: "device_authorizations_profile_name_format"
     t.check_constraint "proof_challenge::text ~ '^[A-Za-z0-9_-]{43}$'::text", name: "device_authorizations_proof_challenge_format"
     t.check_constraint "state::text = 'pending'::text AND owner_id IS NULL AND api_token_id IS NULL AND approved_at IS NULL AND redeemed_at IS NULL AND denied_at IS NULL OR state::text = 'approved'::text AND owner_id IS NOT NULL AND api_token_id IS NULL AND approved_at IS NOT NULL AND redeemed_at IS NULL AND denied_at IS NULL OR state::text = 'redeemed'::text AND owner_id IS NOT NULL AND api_token_id IS NOT NULL AND approved_at IS NOT NULL AND redeemed_at IS NOT NULL AND denied_at IS NULL OR state::text = 'denied'::text AND api_token_id IS NULL AND redeemed_at IS NULL AND denied_at IS NOT NULL", name: "device_authorizations_state_shape"
     t.check_constraint "state::text = ANY (ARRAY['pending'::character varying, 'approved'::character varying, 'redeemed'::character varying, 'denied'::character varying]::text[])", name: "device_authorizations_state"
@@ -142,7 +142,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
     t.index ["release_id", "path"], name: "index_manifest_entries_on_release_id_and_path", unique: true
     t.index ["release_id"], name: "index_manifest_entries_on_release_id"
     t.check_constraint "byte_size >= 0", name: "manifest_entries_byte_size_nonnegative"
-    t.check_constraint "offline_policy::text = ANY (ARRAY['required'::character varying::text, 'optional'::character varying::text, 'download'::character varying::text])", name: "manifest_entries_offline_policy"
+    t.check_constraint "offline_policy::text = ANY (ARRAY['required'::character varying, 'optional'::character varying, 'download'::character varying]::text[])", name: "manifest_entries_offline_policy"
   end
 
   create_table "owner_ceremonies", force: :cascade do |t|
@@ -180,9 +180,9 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
     t.datetime "updated_at", null: false
     t.index ["credential_id"], name: "index_owner_credentials_on_credential_id", unique: true
     t.index ["owner_id"], name: "index_owner_credentials_on_owner_id"
-    t.check_constraint "octet_length(label::text) >= 1 AND octet_length(label::text) <= 100", name: "owner_credentials_label_length"
-    t.check_constraint "octet_length(credential_id) >= 1 AND octet_length(credential_id) <= 1024 AND octet_length(public_key) >= 1 AND octet_length(public_key) <= 16384", name: "owner_credentials_material_length"
     t.check_constraint "jsonb_typeof(transports) = 'array'::text AND transports <@ '[\"ble\", \"hybrid\", \"internal\", \"nfc\", \"smart-card\", \"usb\"]'::jsonb AND jsonb_array_length(transports) <= 6", name: "owner_credentials_transports_array"
+    t.check_constraint "octet_length(credential_id) >= 1 AND octet_length(credential_id) <= 1024 AND octet_length(public_key) >= 1 AND octet_length(public_key) <= 16384", name: "owner_credentials_material_length"
+    t.check_constraint "octet_length(label::text) >= 1 AND octet_length(label::text) <= 100", name: "owner_credentials_label_length"
     t.check_constraint "sign_count >= 0", name: "owner_credentials_sign_count_nonnegative"
   end
 
@@ -193,8 +193,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
     t.string "webauthn_id", null: false
     t.index ["singleton_key"], name: "index_owners_on_singleton_key", unique: true
     t.index ["webauthn_id"], name: "index_owners_on_webauthn_id", unique: true
-    t.check_constraint "singleton_key = true", name: "owners_singleton_key_true"
     t.check_constraint "octet_length(webauthn_id::text) >= 16 AND octet_length(webauthn_id::text) <= 255", name: "owners_webauthn_id_length"
+    t.check_constraint "singleton_key = true", name: "owners_singleton_key_true"
   end
 
   create_table "people", force: :cascade do |t|
@@ -221,7 +221,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_20_120000) do
     t.index ["site_id"], name: "index_publish_plans_on_site_id"
     t.check_constraint "idempotency_key_digest::text ~ '^[0-9a-f]{64}$'::text", name: "publish_plans_idempotency_key_digest_format"
     t.check_constraint "manifest_sha256::text ~ '^[0-9a-f]{64}$'::text", name: "publish_plans_manifest_sha256_format"
-    t.check_constraint "state::text = ANY (ARRAY['open'::character varying::text, 'finalized'::character varying::text])", name: "publish_plans_state"
+    t.check_constraint "state::text = ANY (ARRAY['open'::character varying, 'finalized'::character varying]::text[])", name: "publish_plans_state"
   end
 
   create_table "releases", force: :cascade do |t|
