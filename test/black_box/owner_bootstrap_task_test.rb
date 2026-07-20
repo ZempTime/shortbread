@@ -17,7 +17,10 @@ class OwnerBootstrapTaskTest < ActiveSupport::TestCase
     digest = Digest::SHA256.hexdigest(secret)
 
     stdout, stderr, status = Open3.capture3(
-      { "RAILS_ENV" => "test" },
+      {
+        "RAILS_ENV" => "test",
+        "SHORTBREAD_TEST_DATABASE_NAME" => ActiveRecord::Base.connection_db_config.database
+      },
       RbConfig.ruby,
       Rails.root.join("bin/rails").to_s,
       "shortbread:owner:issue_bootstrap",
