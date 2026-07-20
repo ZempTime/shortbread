@@ -7,5 +7,5 @@ Rails.application.config.filter_parameters += [
   :passw, :email, :secret, :token, :_key, :crypt, :salt, :certificate, :otp, :ssn, :cvv, :cvc,
   :authorization, :secret_digest, :invitation_secret, :handoff, :manifest, :idempotency_key, :first_name,
   :locator, :challenge, :device_code, :proof_verifier, :recovery, :ceremony_secret, :bootstrap_ceremony,
-  :owner_bootstrap_secret, :public_key_credential
+  :owner_bootstrap_secret, :public_key_credential, :credential_label
 ]
