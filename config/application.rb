@@ -15,6 +15,7 @@ require "action_cable/engine"
 require "rails/test_unit/railtie"
 
 require_relative "../lib/shortbread/hosts"
+require_relative "../lib/shortbread/host_identity_guard"
 require_relative "../lib/shortbread/host_scoped_static"
 require_relative "../lib/shortbread/host_scoped_vite_proxy"
 
@@ -38,6 +39,7 @@ module Shortbread
         [ 404, { "Content-Type" => "text/plain; charset=utf-8", "Content-Length" => "0" }, [] ]
       end
     }
+    config.middleware.insert_before 0, Shortbread::HostIdentityGuard
     config.middleware.swap ActionDispatch::Static, Shortbread::HostScopedStatic
 
     initializer "shortbread.host_scoped_vite_proxy", after: "vite_rails.proxy" do |application|
