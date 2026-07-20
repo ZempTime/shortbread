@@ -3,6 +3,16 @@
 class Release < ApplicationRecord
   belongs_to :site
   has_many :manifest_entries, dependent: :restrict_with_exception
+  has_many :rollbacks_from,
+    class_name: "ReleaseRollback",
+    foreign_key: :from_release_id,
+    dependent: :restrict_with_exception,
+    inverse_of: :from_release
+  has_many :rollbacks_to,
+    class_name: "ReleaseRollback",
+    foreign_key: :to_release_id,
+    dependent: :restrict_with_exception,
+    inverse_of: :to_release
 
   attr_readonly :site_id, :number, :manifest_sha256, :finalized_at
 
