@@ -8,6 +8,8 @@ require "openssl"
 require "webauthn"
 
 class OwnerRegistration
+  ATTESTATION_OBJECT_KEYS = %w[attStmt authData fmt].freeze
+  AUTHENTICATOR_DATA_MINIMUM_BYTES = 37
   BASE64URL_FORMAT = /\A[A-Za-z0-9_-]+\z/
   MAX_ATTESTATION_BYTES = 131_072
   MAX_AUTHENTICATOR_ATTACHMENT_BYTES = 64
@@ -136,7 +138,7 @@ class OwnerRegistration
 
     response = credential["response"]
     return false unless response.is_a?(Hash)
-    return false unless decode_base64url(response["attestationObject"], maximum: MAX_ATTESTATION_BYTES)
+    return false unless valid_none_attestation_object?(response["attestationObject"])
     return false unless decode_base64url(response["clientDataJSON"], maximum: MAX_CLIENT_DATA_BYTES)
 
     transports = response["transports"]
@@ -157,6 +159,23 @@ class OwnerRegistration
     rescue *VERIFICATION_INPUT_ERRORS
       reject!
     end
+  end
+
+  def valid_none_attestation_object?(encoded_attestation_object)
+    attestation_bytes = decode_base64url(encoded_attestation_object, maximum: MAX_ATTESTATION_BYTES)
+    return false unless attestation_bytes
+
+    attestation_object = CBOR.decode(attestation_bytes)
+    return false unless attestation_object.is_a?(Hash) &&
+      attestation_object.size == ATTESTATION_OBJECT_KEYS.size &&
+      ATTESTATION_OBJECT_KEYS.all? { |key| attestation_object.key?(key) }
+    return false unless attestation_object["fmt"] == "none" && attestation_object["attStmt"] == {}
+
+    authenticator_data = attestation_object["authData"]
+    authenticator_data.is_a?(String) && authenticator_data.encoding == Encoding::BINARY &&
+      authenticator_data.bytesize.between?(AUTHENTICATOR_DATA_MINIMUM_BYTES, MAX_ATTESTATION_BYTES)
+  rescue CBOR::UnpackError, CBOR::TypeError
+    false
   end
 
   def decode_base64url(value, maximum:)

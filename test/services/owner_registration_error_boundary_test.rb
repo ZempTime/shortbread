@@ -3,6 +3,7 @@
 require "test_helper"
 
 require "base64"
+require "cbor"
 require "securerandom"
 
 class OwnerRegistrationErrorBoundaryTest < ActiveSupport::TestCase
@@ -86,6 +87,11 @@ class OwnerRegistrationErrorBoundaryTest < ActiveSupport::TestCase
 
   def public_key_credential
     credential_id = Base64.urlsafe_encode64("synthetic-credential-id", padding: false)
+    attestation_object = CBOR.encode(
+      "fmt" => "none",
+      "attStmt" => {},
+      "authData" => ("\0".b * OwnerRegistration::AUTHENTICATOR_DATA_MINIMUM_BYTES)
+    )
 
     {
       "id" => credential_id,
@@ -93,7 +99,7 @@ class OwnerRegistrationErrorBoundaryTest < ActiveSupport::TestCase
       "type" => "public-key",
       "clientExtensionResults" => {},
       "response" => {
-        "attestationObject" => Base64.urlsafe_encode64("synthetic-attestation", padding: false),
+        "attestationObject" => Base64.urlsafe_encode64(attestation_object, padding: false),
         "clientDataJSON" => Base64.urlsafe_encode64("synthetic-client-data", padding: false),
         "transports" => []
       }
