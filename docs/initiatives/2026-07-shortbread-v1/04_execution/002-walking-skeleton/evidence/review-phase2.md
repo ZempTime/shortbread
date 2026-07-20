@@ -15,9 +15,11 @@
 |---|---|---|---|
 | Standards | `/root/phase2_standards_review` | **Approved** for `0fda8d4`; no blocker or should-fix | 30 host/Rack tests / 376 assertions, lint, dependency policy, diff/status |
 | Spec | `/root/phase2_standards_review` | **Approved** for `0fda8d4`; no blocker or should-fix | T01 mapping plus development/production stack and valid/invalid host probes |
-| Security/Operations | `/root/repair_phase2_rails` | **Approved** for `0fda8d4`; no blocker, should-fix, or nit | 25 host/Rack tests / 368 assertions, 106 / 1,151 full Rails, full CI, browser tracer, production/Vite probes, redaction, cleanup |
+| Security/Operations | `/root/phase2_standards_review/fresh_security_review` | **Approved** for `0fda8d4`; no blocker or should-fix; one operations note | Focused Rails 92 / 1,104, full Rails 106 / 1,151, black-box 5 / 19, real tracer, dependency/secret gates; delegated CLI/Blob 31 / 383 plus Go internal race |
 
 `/root/phase2_spec_review` independently approved the pre-security candidate `c77cf19`, then switched roles at the controller's direction to author the subsequent test-first host/Rack repairs. Its earlier verdict is not counted as independent approval of its own repair. Final Spec approval therefore belongs to `/root/phase2_standards_review`.
+
+`/root/repair_phase2_rails` found and replayed the production host/Rack blockers, including a 25 / 368 focused security run, but it authored an earlier pre-`5635586` Vite repair. Its later audit is retained as adversarial supporting evidence, not represented as the final independent Security verdict.
 
 ## Blocking findings and dispositions
 
@@ -50,6 +52,8 @@ Against detached clean merge-ready tree `055d448`:
 ## Scope disposition
 
 R2 storage, full multi-file Bundle serving, Release history/rollback, Owner passkeys and remote CLI authorization, Shelf management, production Invitation lifecycle/rate limits, offline copies, feedback, receipts, deletion, deployment, release artifacts, and terminal security/readiness remain assigned to later tickets. They are not T01 promotion blockers.
+
+The fresh Security reviewer recorded one nonblocking harness note: the fixed synthetic tracer appends redacted Site/Blob/path metadata to ignored `log/test.log` outside its private temporary workspace. It observed no bearer, Invitation locator/secret, handoff, or Bundle body. Later cleanup hardening should route tracer logging to `File::NULL` or its mode-`0700` workspace and assert no external log delta.
 
 ## Harvest result
 

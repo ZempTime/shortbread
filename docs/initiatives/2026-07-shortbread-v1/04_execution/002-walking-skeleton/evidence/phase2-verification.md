@@ -35,7 +35,7 @@ The controller ran the following against exact reviewed code candidate `0fda8d4`
 - Security — Ruby and browser advisory audits, dependency policy, secret scan, license audit, Go module verification, and vet passed.
 - License audit — 133 Ruby gems, 170 browser packages with 40 exact/pattern-bounded native/WASM metadata exceptions, and 16 Go modules passed the frozen policy.
 - Typecheck and production browser/CLI builds passed. The known Inertia transform sourcemap warning remains a non-failing upstream build warning; generated artifacts are valid.
-- Focused host/Rack replay — 17 tests / 172 assertions passed before commit; independent Standards/Spec replay later passed 30 / 376 and Security/Operations replay passed 25 / 368.
+- Focused host/Rack replay — 17 tests / 172 assertions passed before commit; independent Standards/Spec replay later passed 30 / 376. Fresh Security/Operations replay passed focused Rails 92 / 1,104, full Rails 106 / 1,151, black-box contract 5 / 19, and a delegated CLI/Blob slice of 31 / 383 plus Go internal race tests.
 - `mise run walking-skeleton` — returned only `Walking skeleton passed.`.
 - Earlier Go-specific final implementation verification ran all packages plus `go test -race ./...`; no Go file changed during the later Ruby middleware repairs.
 - `git diff --check`, governed-dependency comparison, worktree status, and temporary tracer-residue checks were clean.
@@ -58,9 +58,9 @@ The controller stopped and removed the detached worktree's PostgreSQL cluster/wo
 The durable final verdicts and finding dispositions are in [`review-phase2.md`](review-phase2.md). Independent reviewer identities are:
 
 - Standards + final Spec: `/root/phase2_standards_review`;
-- Security/Operations: `/root/repair_phase2_rails`.
+- Security/Operations: `/root/phase2_standards_review/fresh_security_review`.
 
-Both reviewers approved exact code candidate `0fda8d4` with no remaining blocker, should-fix, or nit. The merge-ready `055d448` tree is byte-identical to that reviewed code candidate.
+Both final reviewers approved exact code candidate `0fda8d4` with no remaining blocker or should-fix. The merge-ready `055d448` tree is byte-identical to that reviewed code candidate. `/root/repair_phase2_rails` found and replayed important host/Rack defects but authored an earlier pre-`5635586` Vite repair, so its later 25 / 368 security replay remains supporting evidence rather than the final independent verdict.
 
 Material findings repaired across Phase 2 include:
 
@@ -75,6 +75,8 @@ Material findings repaired across Phase 2 include:
 - line-wide secret-scan test exceptions, zero-file clean scans, and missing direct Site-host Producer denial coverage.
 
 Invitation expiry/revocation/replay/races, maximum-origin bounds, matching proxy-port translation, valid Site denials through production SSL, and all five custom Rack response boundaries now have direct regression coverage.
+
+The fresh Security reviewer recorded one nonblocking operations note: the fixed synthetic tracer can append redacted Site/Blob/path request and SQL metadata to ignored `log/test.log`, outside its mode-`0700` workspace. It observed no bearer, Invitation locator/secret, handoff, or Bundle body. A later harness cleanup should route that logger to `File::NULL` or the private workspace and assert no external log delta.
 
 ## Harvest proposal
 
