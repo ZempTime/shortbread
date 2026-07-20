@@ -15,6 +15,7 @@ require "action_cable/engine"
 require "rails/test_unit/railtie"
 
 require_relative "../lib/shortbread/hosts"
+require_relative "../lib/shortbread/host_identity"
 require_relative "../lib/shortbread/host_identity_guard"
 require_relative "../lib/shortbread/host_scoped_static"
 require_relative "../lib/shortbread/host_scoped_vite_proxy"

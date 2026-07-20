@@ -41,7 +41,7 @@ module Shortbread
     end
 
     def not_found
-      [ 404, NOT_FOUND_HEADERS, [] ]
+      [ 404, NOT_FOUND_HEADERS.dup, [] ]
     end
   end
 end

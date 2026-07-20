@@ -42,6 +42,7 @@ class Shortbread::HostIdentityGuardTest < ActiveSupport::TestCase
       environment_for("localhost:3000", forwarded_host: "bad_host"),
       environment_for("localhost:3000", forwarded_host: "localhost:"),
       environment_for("localhost:3000", forwarded_host: "localhost:70000"),
+      environment_for("localhost:3000", forwarded_host: ""),
       environment_for("localhost:3000", forwarded_host: "localhost,")
     ]
 

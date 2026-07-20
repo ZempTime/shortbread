@@ -11,9 +11,10 @@ class ProductionHostIdentityTest < ActiveSupport::TestCase
     require "json"
     require "rack/mock"
 
-    def request_snapshot(raw_host:, forwarded_host:, path:)
+    def request_snapshot(raw_host:, forwarded_host:, path:, method: "GET")
       environment = Rack::MockRequest.env_for(
         "https://#{raw_host}#{path}",
+        method:,
         "HTTP_HOST" => raw_host,
         "HTTP_X_FORWARDED_HOST" => forwarded_host,
         "HTTPS" => "on",
@@ -37,9 +38,30 @@ class ProductionHostIdentityTest < ActiveSupport::TestCase
       forwarded_host: forwarded_apex,
       path: "/up"
     )
+    forwarded_site = "untrusted.example, first-site.sites.shortbread.example"
+    matching_site = {
+      "GET /up" => request_snapshot(raw_host: raw_site, forwarded_host: forwarded_site, path: "/up"),
+      "GET /robots.txt" => request_snapshot(raw_host: raw_site, forwarded_host: forwarded_site, path: "/robots.txt"),
+      "GET /invitations" => request_snapshot(
+        raw_host: raw_site,
+        forwarded_host: forwarded_site,
+        path: "/invitations/#{"y" * 32}"
+      ),
+      "POST /api/v1/sites" => request_snapshot(
+        raw_host: raw_site,
+        forwarded_host: forwarded_site,
+        path: "/api/v1/sites",
+        method: "POST"
+      )
+    }
     middleware = Rails.application.middleware.map { |entry| entry.klass.name }
 
-    puts JSON.generate({ "middleware" => middleware, "spoofed" => spoofed, "matching_apex" => matching_apex })
+    puts JSON.generate({
+      "middleware" => middleware,
+      "spoofed" => spoofed,
+      "matching_apex" => matching_apex,
+      "matching_site" => matching_site
+    })
   RUBY
 
   test "production rejects a Site raw host forwarded as the apex before routes and static files" do
@@ -62,6 +84,11 @@ class ProductionHostIdentityTest < ActiveSupport::TestCase
     assert_equal({ "status" => 200 }, payload.fetch("matching_apex").slice("status"))
 
     payload.fetch("spoofed").each_value do |response|
+      assert_equal 404, response.fetch("status")
+      assert_equal "", response.fetch("body")
+      assert_equal "0", response.fetch("content_length")
+    end
+    payload.fetch("matching_site").each_value do |response|
       assert_equal 404, response.fetch("status")
       assert_equal "", response.fetch("body")
       assert_equal "0", response.fetch("content_length")

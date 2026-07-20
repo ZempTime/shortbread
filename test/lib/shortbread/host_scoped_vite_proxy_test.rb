@@ -38,6 +38,12 @@ class Shortbread::HostScopedViteProxyTest < ActiveSupport::TestCase
     )
     assert_blank_not_found(apex_spoofing_site)
 
+    empty_forwarded = middleware.call(environment_for("localhost", forwarded_host: ""))
+    assert_blank_not_found(empty_forwarded)
+
+    trailing_comma = middleware.call(environment_for("localhost", forwarded_host: "localhost,"))
+    assert_blank_not_found(trailing_comma)
+
     assert_equal [ "localhost" ], proxy_hosts
     assert_equal [ "first-site.sites.localhost" ], app_hosts
   end
