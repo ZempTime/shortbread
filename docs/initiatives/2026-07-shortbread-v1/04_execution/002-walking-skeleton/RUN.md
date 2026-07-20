@@ -6,8 +6,8 @@
 | Branch | `ticket-2-walking-skeleton` |
 | Pinned baseline | `412be84d441325c5e61004da87ec6878e588d7b4` (`Start Shortbread v1 execution`) |
 | Owner | `ZempTime` |
-| Current phase | Phase 2 approved promotion and PR integration |
-| State | Fixed code `0fda8d4` is approved on Standards, Spec, and Security/Operations; merge-ready tree `055d448` is tree-identical and passed detached clean-checkout CI plus the real browser tracer |
+| Current phase | Integrated |
+| State | PR #18 merged at `f2e0326`; issue #2 is closed; fixed code, final reviews, clean-checkout CI, and the real browser tracer remain recorded below |
 
 ## Inputs
 
@@ -58,4 +58,4 @@ Stop for review only after a built Go CLI creates the minimum records, safely pu
 
 The dependency freeze remains intact: no dependency/tool version, source, inventory, lock entry, or governed manifest digest changed in Phase 2. The frozen `mise.toml` therefore retains its historical “currently pending” walking-skeleton description even though the task is now implemented; this RUN file, not that governed setup label, owns live execution status.
 
-Independent Standards, Spec, and Security/Operations reviews approve `0fda8d4` with no remaining blocker or should-fix. Controller CI, detached clean-checkout CI, focused host/Rack probes, and the real browser tracer are green. The named verdicts, every blocking repair, exact gate counts, clean-tree comparison, and harvest disposition are recorded in [`evidence/review-phase2.md`](evidence/review-phase2.md). The remaining action is reviewed PR integration.
+Independent Standards, Spec, and Security/Operations reviews approve `0fda8d4` with no remaining blocker or should-fix. Controller CI, detached clean-checkout CI, focused host/Rack probes, and the real browser tracer are green. The named verdicts, every blocking repair, exact gate counts, clean-tree comparison, and harvest disposition are recorded in [`evidence/review-phase2.md`](evidence/review-phase2.md). PR #18 integrated the ticket at `f2e0326`.

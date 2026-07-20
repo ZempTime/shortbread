@@ -4,7 +4,7 @@
 
 **Why a workspace fits:** The work moves through bounded transformations whose inputs and evidence must remain inspectable. GitHub issues and pull requests coordinate work across sessions; this workspace owns the decisions, stage state, harness choices, evidence, and handoff. [`RUN.md`](RUN.md) is authoritative.
 
-**Status:** Execution active. GitHub #2's dependency baseline is frozen, its publish/invite/private-view tracer is independently approved, and PR integration is the current promotion gate. [`RUN.md`](RUN.md) owns the exact live checkpoint.
+**Status:** Execution active. GitHub #2's publish/invite/private-view tracer is integrated through PR #18. GitHub #3 and #4 are the parallel implementation frontier. [`RUN.md`](RUN.md) owns the exact live checkpoint.
 
 ## Execution Model
 

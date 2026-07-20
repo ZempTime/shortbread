@@ -87,4 +87,4 @@ Four reusable factory improvements are proposed; none changes `agents/` before t
 3. Host-bound applications need actual production- and development-stack raw/effective-forwarded-host regressions; a development-only proxy guard can mask the production boundary.
 4. Every custom Rack middleware or endpoint tuple should be exercised through `Rack::Lint`, including header mutability and lowercase-name requirements.
 
-The controller will decide whether to harvest these into the shared factory after ticket integration, when the implementation workspace is no longer moving.
+Post-integration decision: retain these candidates in ticket evidence without changing `agents/` yet. A second demonstrated use or the terminal harvest can promote them into the shared factory with stronger evidence than one tracer.

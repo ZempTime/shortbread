@@ -57,4 +57,4 @@ The fresh Security reviewer recorded one nonblocking harness note: the fixed syn
 
 ## Harvest result
 
-No shared-factory file changes are made inside ticket #2. Four candidates are retained in [`phase2-verification.md`](phase2-verification.md): reserved multi-label `.localhost` browser tracing, exact secret-bearing CLI output protocols, real production/development host-identity probes, and Rack::Lint for custom Rack tuples. The controller makes the harvest decision after integration.
+No shared-factory file changes are made for ticket #2. Four candidates are retained in [`phase2-verification.md`](phase2-verification.md): reserved multi-label `.localhost` browser tracing, exact secret-bearing CLI output protocols, real production/development host-identity probes, and Rack::Lint for custom Rack tuples. The post-integration controller decision is to wait for a second demonstrated use or terminal harvest before changing `agents/`.
