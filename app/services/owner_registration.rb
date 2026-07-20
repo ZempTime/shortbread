@@ -213,11 +213,32 @@ class OwnerRegistration
 
     cose_key = COSE::Key.deserialize(CBOR.encode(public_key_map))
     algorithm = COSE::Algorithm.find(cose_key.alg)
-    return unless algorithm
+    return unless algorithm && compatible_cose_public_key?(algorithm, cose_key)
 
     AttestedCredentialData.new(id: credential_id, algorithm: algorithm.name)
   rescue CBOR::UnpackError, CBOR::TypeError, COSE::Error, ArgumentError, TypeError, EncodingError
     nil
+  end
+
+  def compatible_cose_public_key?(algorithm, cose_key)
+    return false unless public_cose_key?(cose_key)
+    return false if algorithm.is_a?(COSE::Algorithm::ECDSA) &&
+      (!cose_key.is_a?(COSE::Key::EC2) || cose_key.curve != algorithm.curve)
+
+    !!algorithm.compatible_key?(cose_key)
+  rescue COSE::Error, OpenSSL::OpenSSLError, ArgumentError, TypeError, RuntimeError, NoMethodError
+    false
+  end
+
+  def public_cose_key?(cose_key)
+    case cose_key
+    when COSE::Key::EC2
+      cose_key.d.nil?
+    when COSE::Key::RSA
+      [ cose_key.d, cose_key.p, cose_key.q, cose_key.dp, cose_key.dq, cose_key.qinv ].all?(&:nil?)
+    else
+      false
+    end
   end
 
   def decode_base64url(value, maximum:)

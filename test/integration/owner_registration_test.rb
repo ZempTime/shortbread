@@ -6,6 +6,7 @@ require "base64"
 require "cbor"
 require "digest"
 require "nokogiri"
+require "openssl"
 require "securerandom"
 require "webauthn/fake_client"
 
@@ -179,13 +180,65 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
       CBOR.encode(unknown_algorithm_attestation),
       padding: false
     )
+    unsupported_curve_credential = valid_credential.deep_dup
+    unsupported_curve_attestation = CBOR.decode(
+      Base64.urlsafe_decode64(valid_credential.dig("response", "attestationObject"))
+    )
+    authenticator_data = unsupported_curve_attestation.fetch("authData")
+    credential_id_length = authenticator_data.byteslice(53, 2).unpack1("n")
+    public_key_offset = 55 + credential_id_length
+    public_key = CBOR.decode(authenticator_data.byteslice(public_key_offset..))
+    public_key[-1] = 999
+    unsupported_curve_attestation["authData"] =
+      authenticator_data.byteslice(0, public_key_offset) + CBOR.encode(public_key)
+    unsupported_curve_credential["response"]["attestationObject"] = Base64.urlsafe_encode64(
+      CBOR.encode(unsupported_curve_attestation),
+      padding: false
+    )
+    mismatched_curve_credential = valid_credential.deep_dup
+    mismatched_curve_attestation = CBOR.decode(
+      Base64.urlsafe_decode64(valid_credential.dig("response", "attestationObject"))
+    )
+    authenticator_data = mismatched_curve_attestation.fetch("authData")
+    credential_id_length = authenticator_data.byteslice(53, 2).unpack1("n")
+    public_key_offset = 55 + credential_id_length
+    p384_public_key = COSE::Key::EC2
+      .from_pkey(OpenSSL::PKey::EC::Group.new("secp384r1").generator)
+      .map
+      .merge(3 => -7)
+    mismatched_curve_attestation["authData"] =
+      authenticator_data.byteslice(0, public_key_offset) + CBOR.encode(p384_public_key)
+    mismatched_curve_credential["response"]["attestationObject"] = Base64.urlsafe_encode64(
+      CBOR.encode(mismatched_curve_attestation),
+      padding: false
+    )
+    private_key_credential = valid_credential.deep_dup
+    private_key_attestation = CBOR.decode(
+      Base64.urlsafe_decode64(valid_credential.dig("response", "attestationObject"))
+    )
+    authenticator_data = private_key_attestation.fetch("authData")
+    credential_id_length = authenticator_data.byteslice(53, 2).unpack1("n")
+    public_key_offset = 55 + credential_id_length
+    p256_private_key = COSE::Key::EC2
+      .from_pkey(OpenSSL::PKey::EC::Group.new("prime256v1").generator)
+      .map
+      .merge(3 => -7, -4 => "\x01".b)
+    private_key_attestation["authData"] =
+      authenticator_data.byteslice(0, public_key_offset) + CBOR.encode(p256_private_key)
+    private_key_credential["response"]["attestationObject"] = Base64.urlsafe_encode64(
+      CBOR.encode(private_key_attestation),
+      padding: false
+    )
 
     {
       "Unbound passkey ID" => unbound_id_credential,
       "Mismatched passkey" => mismatched_id_credential,
       "Malformed attestation" => malformed_attestation_credential,
       "TPM attestation" => tpm_attestation_credential,
-      "Unknown credential algorithm" => unknown_algorithm_credential
+      "Unknown credential algorithm" => unknown_algorithm_credential,
+      "Unsupported credential curve" => unsupported_curve_credential,
+      "Credential curve incompatible with ES256" => mismatched_curve_credential,
+      "Credential containing private key material" => private_key_credential
     }.each do |label, attacker_credential|
       assert_no_difference -> { Owner.count }, -> { table_count("owner_credentials") } do
         post "/owner/bootstrap",
@@ -245,6 +298,41 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
       assert_response :not_found
     end
     assert_equal 1, table_count("owner_credentials")
+  end
+
+  test "registration accepts an RP-allowed RSA public credential" do
+    _ceremony, ceremony_secret = issue_ceremony
+    request_headers = REQUEST_HEADERS.merge("X-CSRF-Token" => @csrf_token)
+
+    post "/owner/bootstrap/options",
+      params: { ceremony_secret: },
+      headers: request_headers,
+      as: :json
+    assert_response :ok
+
+    public_key = response.parsed_body.fetch("public_key")
+    rsa_credential = WebAuthn::FakeClient
+      .new("http://localhost")
+      .create(
+        challenge: public_key.fetch("challenge"),
+        rp_id: "localhost",
+        user_verified: true,
+        credential_algorithm: "RS256"
+      )
+
+    assert_difference -> { Owner.count } => 1, -> { table_count("owner_credentials") } => 1 do
+      post "/owner/bootstrap",
+        params: {
+          ceremony_secret:,
+          credential_label: "RSA passkey",
+          public_key_credential: rsa_credential
+        },
+        headers: request_headers,
+        as: :json
+      assert_response :created
+    end
+
+    assert_equal rsa_credential.fetch("id"), credential_model.find_by!(owner_id: Owner.sole.id).credential_id
   end
 
   test "completion rejects a ceremony that expires after options were issued" do
