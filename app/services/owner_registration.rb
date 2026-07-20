@@ -1,8 +1,11 @@
 # frozen_string_literal: true
 
 require "base64"
+require "cbor"
 require "digest"
+require "json"
 require "openssl"
+require "webauthn"
 
 class OwnerRegistration
   BASE64URL_FORMAT = /\A[A-Za-z0-9_-]+\z/
@@ -11,6 +14,17 @@ class OwnerRegistration
   MAX_CLIENT_DATA_BYTES = 16_384
   MAX_CREDENTIAL_ID_BYTES = 1_024
   SECRET_FORMAT = /\A[A-Za-z0-9_-]{43}\z/
+  VERIFICATION_INPUT_ERRORS = [
+    WebAuthn::Error,
+    CBOR::UnpackError,
+    CBOR::TypeError,
+    JSON::ParserError,
+    COSE::Error,
+    ArgumentError,
+    TypeError,
+    EncodingError,
+    OpenSSL::OpenSSLError
+  ].freeze
 
   Result = Data.define(:owner)
 
@@ -133,13 +147,16 @@ class OwnerRegistration
 
   def verify_registration(public_key_credential, challenge:)
     relying_party = webauthn.relying_party
-    relying_party.verify_registration(
-      public_key_credential,
-      challenge,
-      user_verification: true
-    )
-  rescue StandardError
-    reject!
+
+    begin
+      relying_party.verify_registration(
+        public_key_credential,
+        challenge,
+        user_verification: true
+      )
+    rescue *VERIFICATION_INPUT_ERRORS
+      reject!
+    end
   end
 
   def decode_base64url(value, maximum:)
