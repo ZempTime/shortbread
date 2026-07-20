@@ -102,5 +102,5 @@ description = "Verify the dependency-bootstrap public seams"
 run = "bin/verify-bootstrap"
 
 [tasks.walking-skeleton]
-description = "Run the phase-2 publish/invite/view tracer (currently pending)"
+description = "Run the publish/invite/view browser tracer"
 run = "bin/walking-skeleton"

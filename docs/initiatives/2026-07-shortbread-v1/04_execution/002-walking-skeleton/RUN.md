@@ -6,8 +6,8 @@
 | Branch | `ticket-2-walking-skeleton` |
 | Pinned baseline | `412be84d441325c5e61004da87ec6878e588d7b4` (`Start Shortbread v1 execution`) |
 | Owner | `ZempTime` |
-| Current phase | Phase 2 behavioral tracer implementation |
-| State | Dependency baseline frozen and independently approved at `3c40a67`; publish/invite/view TDD is the active frontier |
+| Current phase | Phase 2 fixed-SHA review and promotion |
+| State | Behavioral implementation is frozen at `5635586`; full CI, clean-checkout CI, Go race tests, and the real browser tracer are green; final Spec/Security review and documentation rereview remain |
 
 ## Inputs
 
@@ -36,6 +36,7 @@ This phase must not create product records, product routes, deployment resources
 - [`evidence/bootstrap-green.md`](evidence/bootstrap-green.md)
 - [`evidence/dependency-audit.md`](evidence/dependency-audit.md)
 - [`evidence/review-phase1.md`](evidence/review-phase1.md)
+- [`evidence/phase2-verification.md`](evidence/phase2-verification.md)
 
 ## Controller decisions for phase 2
 
@@ -49,3 +50,11 @@ This phase must not create product records, product routes, deployment resources
 Implement the thinnest durable domain, API, local Blob storage, CLI, Invitation acceptance, host-session, and private-serving seams required by T01. Work test-first at request, CLI black-box, and browser boundaries. Dependency manifests and locks remain frozen.
 
 Stop for review only after a built Go CLI creates the minimum records, safely publishes one HTML Bundle, writes the one-time Invitation link only to the approved private sink, and the browser proves preview-safe GET → explicit POST → private Site view. Unauthenticated Site reads, Invitation replay, unsafe Bundle paths, symlinks, reserved paths, and representative secret-like files must fail closed.
+
+## Phase 2 checkpoint
+
+`5635586` (`Complete private publish invitation tracer`) is the fixed implementation checkpoint relative to promotion baseline `606a94f`. It contains the durable Site/Person/Grant/Invitation/Release/Blob model, bootstrap-token Producer API, safe one-file CLI publish path, preview-safe explicit Invitation acceptance, one-use host-bound handoff and Site session, private HTML serving, exact host isolation, strict redaction/security checks, and the built-CLI-to-real-Chrome black-box tracer.
+
+The dependency freeze remains intact: no dependency/tool version, source, inventory, or lock entry changed in Phase 2. The controller-owned `mise.toml` follow-up changes only the now-stale walking-skeleton task description from pending to available.
+
+Independent Standards review approved the code at `5635586` after all implementation blocker and should-fix findings were repaired. This documentation follow-up resolves its remaining process blocker. Fixed-SHA Spec and Security/Operations reviews are the remaining promotion gates; their identities and verdicts will be appended to the phase-two review record before integration.
