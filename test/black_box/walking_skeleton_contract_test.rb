@@ -16,6 +16,51 @@ class WalkingSkeletonContractTest < ActiveSupport::TestCase
     }
   }.freeze
 
+  VALID_RELEASE_HISTORY = {
+    ok: true,
+    result: {
+      resource: "release_history",
+      site_slug: "walking-skeleton",
+      current_release_number: 2,
+      releases: [
+        {
+          id: 23,
+          number: 2,
+          manifest_sha256: "b" * 64,
+          finalized_at: "2026-07-20T12:02:00.000000Z",
+          current: true,
+          files: 3,
+          bytes: 431
+        },
+        {
+          id: 19,
+          number: 1,
+          manifest_sha256: "a" * 64,
+          finalized_at: "2026-07-20T12:01:00.000000Z",
+          current: false,
+          files: 3,
+          bytes: 417
+        }
+      ],
+      pagination: { limit: 50, next_before: nil }
+    }
+  }.freeze
+
+  VALID_RELEASE_ROLLBACK = {
+    ok: true,
+    result: {
+      resource: "release_rollback",
+      status: "rolled_back",
+      id: 29,
+      site_slug: "walking-skeleton",
+      from_release_number: 2,
+      to_release_number: 1,
+      resulting_release_number: 1,
+      changed: true,
+      recorded_at: "2026-07-20T12:03:00.000000Z"
+    }
+  }.freeze
+
   test "Invitation CLI output accepts only its exact redacted success schema" do
     with_cli(stdout: JSON.generate(VALID_INVITATION)) do |cli|
       assert_equal({ id: 17, link_written: true }, cli.call(:invitation, "invite", "create"))
@@ -68,6 +113,110 @@ class WalkingSkeletonContractTest < ActiveSupport::TestCase
         { id: 23, number: 1, files: 1, uploaded: 1, reused: 0, bytes: 324 },
         cli.call(:publish, "publish", "synthetic-bundle", "--site", "synthetic-site")
       )
+    end
+  end
+
+  test "release history CLI output accepts only ordered immutable Release summaries" do
+    with_cli(stdout: JSON.generate(VALID_RELEASE_HISTORY)) do |cli|
+      result = cli.call(:release_history, "releases", "list", "--site", "walking-skeleton")
+
+      assert_equal 2, result.fetch(:current_release_number)
+      assert_equal [ 2, 1 ], result.fetch(:releases).map { |release| release.fetch("number") }
+      assert_equal [ true, false ], result.fetch(:releases).map { |release| release.fetch("current") }
+    end
+
+    payload = Marshal.load(Marshal.dump(VALID_RELEASE_HISTORY))
+    payload.fetch(:result).fetch(:releases).first[:private_path] = "synthetic-forbidden-marker"
+    with_cli(stdout: JSON.generate(payload)) do |cli|
+      assert_raises(ShortbreadBlackBox::Failure) do
+        cli.call(:release_history, "releases", "list", "--site", "walking-skeleton")
+      end
+    end
+
+    valid_max_slug = "a#{"-" * 61}z"
+    payload = Marshal.load(Marshal.dump(VALID_RELEASE_HISTORY))
+    payload.fetch(:result)[:site_slug] = valid_max_slug
+    payload.fetch(:result).fetch(:releases).first[:bytes] = 0
+    with_cli(stdout: JSON.generate(payload)) do |cli|
+      result = cli.call(:release_history, "releases", "list", "--site", valid_max_slug)
+
+      assert_equal valid_max_slug, result.fetch(:site_slug)
+      assert_equal 0, result.fetch(:releases).first.fetch("bytes")
+    end
+
+    invalid_long_slug = "a#{"-" * 62}z"
+    payload.fetch(:result)[:site_slug] = invalid_long_slug
+    with_cli(stdout: JSON.generate(payload)) do |cli|
+      assert_raises(ShortbreadBlackBox::Failure) do
+        cli.call(:release_history, "releases", "list", "--site", invalid_long_slug)
+      end
+    end
+
+    unpublished = Marshal.load(Marshal.dump(VALID_RELEASE_HISTORY))
+    unpublished.fetch(:result)[:current_release_number] = nil
+    unpublished.fetch(:result)[:releases] = []
+    with_cli(stdout: JSON.generate(unpublished)) do |cli|
+      result = cli.call(:release_history, "releases", "list", "--site", "walking-skeleton")
+
+      assert_nil result.fetch(:current_release_number)
+      assert_empty result.fetch(:releases)
+    end
+
+    older_page = Marshal.load(Marshal.dump(VALID_RELEASE_HISTORY))
+    older_page.fetch(:result)[:releases] = [ older_page.fetch(:result).fetch(:releases).last ]
+    with_cli(stdout: JSON.generate(older_page)) do |cli|
+      result = cli.call(:release_history, "releases", "list", "--site", "walking-skeleton", "--before", "2")
+
+      assert_equal 2, result.fetch(:current_release_number)
+      assert_equal [ 1 ], result.fetch(:releases).map { |release| release.fetch("number") }
+      assert_not result.fetch(:releases).first.fetch("current")
+    end
+  end
+
+  test "release rollback CLI output accepts only its exact durable result" do
+    with_cli(stdout: JSON.generate(VALID_RELEASE_ROLLBACK)) do |cli|
+      assert_equal(
+        {
+          id: 29,
+          site_slug: "walking-skeleton",
+          from_release_number: 2,
+          to_release_number: 1,
+          resulting_release_number: 1,
+          changed: true,
+          recorded_at: "2026-07-20T12:03:00.000000Z"
+        },
+        cli.call(:release_rollback, "releases", "rollback", "--site", "walking-skeleton", "--release", "1")
+      )
+    end
+
+    payload = Marshal.load(Marshal.dump(VALID_RELEASE_ROLLBACK))
+    payload.fetch(:result)[:idempotency_key] = "synthetic-forbidden-marker"
+    with_cli(stdout: JSON.generate(payload)) do |cli|
+      assert_raises(ShortbreadBlackBox::Failure) do
+        cli.call(:release_rollback, "releases", "rollback", "--site", "walking-skeleton", "--release", "1")
+      end
+    end
+
+
+    no_op = Marshal.load(Marshal.dump(VALID_RELEASE_ROLLBACK))
+    no_op.fetch(:result).merge!(
+      status: "already_current",
+      from_release_number: 1,
+      changed: false
+    )
+    with_cli(stdout: JSON.generate(no_op)) do |cli|
+      result = cli.call(:release_rollback, "releases", "rollback", "--site", "walking-skeleton", "--release", "1")
+
+      assert_equal false, result.fetch(:changed)
+      assert_equal result.fetch(:from_release_number), result.fetch(:to_release_number)
+    end
+
+    incoherent = Marshal.load(Marshal.dump(no_op))
+    incoherent.fetch(:result)[:changed] = true
+    with_cli(stdout: JSON.generate(incoherent)) do |cli|
+      assert_raises(ShortbreadBlackBox::Failure) do
+        cli.call(:release_rollback, "releases", "rollback", "--site", "walking-skeleton", "--release", "1")
+      end
     end
   end
 
