@@ -143,6 +143,10 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
       .new("http://localhost")
       .create(challenge: public_key.fetch("challenge"), rp_id: "localhost", user_verified: true)
 
+    unbound_id_credential = valid_credential.deep_dup
+    unbound_id = Base64.urlsafe_encode64("attacker-selected-credential-id", padding: false)
+    unbound_id_credential["id"] = unbound_id
+    unbound_id_credential["rawId"] = unbound_id
     mismatched_id_credential = valid_credential.deep_dup
     mismatched_id_credential["id"] = Base64.urlsafe_encode64("mismatched-credential-id", padding: false)
     malformed_attestation_credential = valid_credential.deep_dup
@@ -160,11 +164,28 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
       CBOR.encode(tpm_attestation_object),
       padding: false
     )
+    unknown_algorithm_credential = valid_credential.deep_dup
+    unknown_algorithm_attestation = CBOR.decode(
+      Base64.urlsafe_decode64(valid_credential.dig("response", "attestationObject"))
+    )
+    authenticator_data = unknown_algorithm_attestation.fetch("authData")
+    credential_id_length = authenticator_data.byteslice(53, 2).unpack1("n")
+    public_key_offset = 55 + credential_id_length
+    public_key = CBOR.decode(authenticator_data.byteslice(public_key_offset..))
+    public_key[3] = 999
+    unknown_algorithm_attestation["authData"] =
+      authenticator_data.byteslice(0, public_key_offset) + CBOR.encode(public_key)
+    unknown_algorithm_credential["response"]["attestationObject"] = Base64.urlsafe_encode64(
+      CBOR.encode(unknown_algorithm_attestation),
+      padding: false
+    )
 
     {
+      "Unbound passkey ID" => unbound_id_credential,
       "Mismatched passkey" => mismatched_id_credential,
       "Malformed attestation" => malformed_attestation_credential,
-      "TPM attestation" => tpm_attestation_credential
+      "TPM attestation" => tpm_attestation_credential,
+      "Unknown credential algorithm" => unknown_algorithm_credential
     }.each do |label, attacker_credential|
       assert_no_difference -> { Owner.count }, -> { table_count("owner_credentials") } do
         post "/owner/bootstrap",

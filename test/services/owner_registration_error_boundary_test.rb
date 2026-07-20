@@ -2,9 +2,8 @@
 
 require "test_helper"
 
-require "base64"
-require "cbor"
 require "securerandom"
+require "webauthn/fake_client"
 
 class OwnerRegistrationErrorBoundaryTest < ActiveSupport::TestCase
   ORIGIN = "http://localhost"
@@ -13,8 +12,11 @@ class OwnerRegistrationErrorBoundaryTest < ActiveSupport::TestCase
   class UnexpectedVerificationError < RuntimeError; end
 
   class RelyingPartySeam
+    attr_reader :algorithms
+
     def initialize(error)
       @error = error
+      @algorithms = [ "ES256" ]
     end
 
     def verify_registration(*)
@@ -74,6 +76,17 @@ class OwnerRegistrationErrorBoundaryTest < ActiveSupport::TestCase
     assert_same injected_error, raised_error
   end
 
+  test "an unexpected verifier NoMethodError escapes" do
+    injected_error = NoMethodError.new("synthetic verifier method fault")
+    webauthn = WebAuthnSeam.new(relying_party: RelyingPartySeam.new(injected_error))
+
+    raised_error = assert_raises(NoMethodError) do
+      complete_with(webauthn:)
+    end
+
+    assert_same injected_error, raised_error
+  end
+
   private
 
   def complete_with(webauthn:)
@@ -86,23 +99,10 @@ class OwnerRegistrationErrorBoundaryTest < ActiveSupport::TestCase
   end
 
   def public_key_credential
-    credential_id = Base64.urlsafe_encode64("synthetic-credential-id", padding: false)
-    attestation_object = CBOR.encode(
-      "fmt" => "none",
-      "attStmt" => {},
-      "authData" => ("\0".b * OwnerRegistration::AUTHENTICATOR_DATA_MINIMUM_BYTES)
+    WebAuthn::FakeClient.new(ORIGIN).create(
+      challenge: "synthetic-registration-challenge",
+      rp_id: RP_ID,
+      user_verified: true
     )
-
-    {
-      "id" => credential_id,
-      "rawId" => credential_id,
-      "type" => "public-key",
-      "clientExtensionResults" => {},
-      "response" => {
-        "attestationObject" => Base64.urlsafe_encode64(attestation_object, padding: false),
-        "clientDataJSON" => Base64.urlsafe_encode64("synthetic-client-data", padding: false),
-        "transports" => []
-      }
-    }
   end
 end
