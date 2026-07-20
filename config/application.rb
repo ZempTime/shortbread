@@ -14,6 +14,7 @@ require "action_view/railtie"
 require "action_cable/engine"
 require "rails/test_unit/railtie"
 
+require_relative "../lib/shortbread/rack_responses"
 require_relative "../lib/shortbread/hosts"
 require_relative "../lib/shortbread/host_identity"
 require_relative "../lib/shortbread/host_identity_guard"
@@ -36,9 +37,7 @@ module Shortbread
 
     config.hosts = [ Shortbread::Hosts.authorization_pattern ]
     config.host_authorization = {
-      response_app: ->(_environment) do
-        [ 404, { "Content-Type" => "text/plain; charset=utf-8", "Content-Length" => "0" }, [] ]
-      end
+      response_app: ->(_environment) { Shortbread::RackResponses.not_found }
     }
     config.middleware.insert_before 0, Shortbread::HostIdentityGuard
     config.middleware.swap ActionDispatch::Static, Shortbread::HostScopedStatic

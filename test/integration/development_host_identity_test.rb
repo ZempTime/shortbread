@@ -25,7 +25,7 @@ class DevelopmentHostIdentityTest < ActiveSupport::TestCase
       content = +""
       body.each { |chunk| content << chunk }
       body.close if body.respond_to?(:close)
-      { "status" => status, "body" => content, "content_length" => headers["Content-Length"] }
+      { "status" => status, "body" => content, "content_length" => headers["content-length"] }
     end
 
     middleware = Rails.application.middleware.map { |entry| entry.klass.name }

@@ -25,7 +25,7 @@ class ProductionHostIdentityTest < ActiveSupport::TestCase
       content = +""
       body.each { |chunk| content << chunk }
       body.close if body.respond_to?(:close)
-      { "status" => status, "body" => content, "content_length" => headers["Content-Length"] }
+      { "status" => status, "body" => content, "content_length" => headers["content-length"] }
     end
 
     raw_site = "first-site.sites.shortbread.example:8443"

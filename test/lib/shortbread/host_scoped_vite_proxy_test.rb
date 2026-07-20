@@ -10,11 +10,11 @@ class Shortbread::HostScopedViteProxyTest < ActiveSupport::TestCase
     app_hosts = []
     proxy = lambda do |environment|
       proxy_hosts << environment.fetch("HTTP_HOST")
-      [ 200, { "Content-Type" => "application/javascript" }, [ "SYNTHETIC_VITE_RESPONSE" ] ]
+      [ 200, { "content-type" => "application/javascript" }, [ "SYNTHETIC_VITE_RESPONSE" ] ]
     end
     app = lambda do |environment|
       app_hosts << environment.fetch("HTTP_HOST")
-      [ 404, { "Content-Type" => "text/plain; charset=utf-8", "Content-Length" => "0" }, [] ]
+      [ 404, { "content-type" => "text/plain; charset=utf-8", "content-length" => "0" }, [] ]
     end
     middleware = Shortbread::HostScopedViteProxy.new(app, proxy:)
 
@@ -61,7 +61,7 @@ class Shortbread::HostScopedViteProxyTest < ActiveSupport::TestCase
 
   def assert_blank_not_found(response)
     assert_equal 404, response.first
-    assert_equal "0", response.fetch(1).fetch("Content-Length")
+    assert_equal "0", response.fetch(1).fetch("content-length")
     assert_empty response_body(response)
   end
 

@@ -4,11 +4,6 @@ require "action_dispatch/middleware/static"
 
 module Shortbread
   class HostScopedStatic
-    NOT_FOUND_HEADERS = {
-      "Content-Type" => "text/plain; charset=utf-8",
-      "Content-Length" => "0"
-    }.freeze
-
     def initialize(app)
       @app = app
       settings = Rails.application.config.public_file_server
@@ -28,7 +23,7 @@ module Shortbread
 
       blank_not_found(@app.call(environment))
     rescue Hosts::InvalidHost
-      not_found
+      RackResponses.not_found
     end
 
     private
@@ -37,11 +32,7 @@ module Shortbread
       return response unless response.first == 404
 
       response.last.close if response.last.respond_to?(:close)
-      not_found
-    end
-
-    def not_found
-      [ 404, NOT_FOUND_HEADERS.dup, [] ]
+      RackResponses.not_found
     end
   end
 end

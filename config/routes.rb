@@ -24,7 +24,5 @@ Rails.application.routes.draw do
   constraints ->(request) { request.host == apex_host } do
     get "up" => "rails/health#show", as: :rails_health_check
   end
-  get "up", to: ->(_environment) {
-    [ 404, { "Content-Type" => "text/plain; charset=utf-8", "Content-Length" => "0" }, [] ]
-  }
+  get "up", to: ->(_environment) { Shortbread::RackResponses.not_found }
 end

@@ -9,7 +9,7 @@ class Shortbread::HostIdentityGuardTest < ActiveSupport::TestCase
     calls = []
     application = lambda do |environment|
       calls << environment.fetch("HTTP_HOST")
-      [ 204, { "X-Downstream" => "reached" }, [] ]
+      [ 204, { "x-downstream" => "reached" }, [] ]
     end
     middleware = Shortbread::HostIdentityGuard.new(application)
     attempts = [
@@ -25,7 +25,7 @@ class Shortbread::HostIdentityGuardTest < ActiveSupport::TestCase
       response = middleware.call(environment)
 
       assert_equal 204, response.first
-      assert_equal "reached", response.fetch(1).fetch("X-Downstream")
+      assert_equal "reached", response.fetch(1).fetch("x-downstream")
     end
     assert_equal attempts.map { |environment| environment.fetch("HTTP_HOST") }, calls
   end
@@ -50,7 +50,7 @@ class Shortbread::HostIdentityGuardTest < ActiveSupport::TestCase
       response = middleware.call(environment)
 
       assert_equal 404, response.first
-      assert_equal "0", response.fetch(1).fetch("Content-Length")
+      assert_equal "0", response.fetch(1).fetch("content-length")
       assert_empty response.last
     end
     assert_empty calls
