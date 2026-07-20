@@ -24,6 +24,7 @@ class RequestLoggingFilterTest < ActiveSupport::TestCase
       bootstrap_ceremony
       owner_bootstrap_secret
       public_key_credential
+      credential_label
     ].index_with { |name| "synthetic-#{name}" }
 
     filtered = ActiveSupport::ParameterFilter

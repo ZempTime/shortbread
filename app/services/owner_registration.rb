@@ -1,15 +1,15 @@
 # frozen_string_literal: true
 
 require "base64"
-require "cbor"
 require "digest"
-require "json"
 require "openssl"
 
 class OwnerRegistration
+  BASE64URL_FORMAT = /\A[A-Za-z0-9_-]+\z/
   MAX_ATTESTATION_BYTES = 131_072
+  MAX_AUTHENTICATOR_ATTACHMENT_BYTES = 64
   MAX_CLIENT_DATA_BYTES = 16_384
-  MAX_CREDENTIAL_ID_BYTES = 2_048
+  MAX_CREDENTIAL_ID_BYTES = 1_024
   SECRET_FORMAT = /\A[A-Za-z0-9_-]{43}\z/
 
   Result = Data.define(:owner)
@@ -27,8 +27,7 @@ class OwnerRegistration
 
     def complete!(secret:, label:, public_key_credential:, webauthn:, now: Time.current)
       new(webauthn:).complete!(secret:, label:, public_key_credential:, now:)
-    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique, WebAuthn::Error,
-      JSON::ParserError, CBOR::UnpackError, CBOR::TypeError, ArgumentError, TypeError
+    rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
       raise Rejected
     end
   end
@@ -70,11 +69,7 @@ class OwnerRegistration
       reject! unless ceremony.challenge.present? &&
         ceremony.origin == webauthn.origin && ceremony.rp_id == webauthn.rp_id
 
-      credential = webauthn.relying_party.verify_registration(
-        public_key_credential,
-        ceremony.challenge,
-        user_verification: true
-      )
+      credential = verify_registration(public_key_credential, challenge: ceremony.challenge)
       reject! unless credential
 
       owner = Owner.create!(webauthn_id: owner_webauthn_id(ceremony))
@@ -113,16 +108,53 @@ class OwnerRegistration
 
   def valid_public_key_credential_shape?(credential)
     return false unless credential.is_a?(Hash) && credential["type"] == "public-key"
-    return false unless bounded_string?(credential["id"], maximum: MAX_CREDENTIAL_ID_BYTES)
-    return false unless bounded_string?(credential["rawId"], maximum: MAX_CREDENTIAL_ID_BYTES)
+
+    decoded_id = decode_base64url(credential["id"], maximum: MAX_CREDENTIAL_ID_BYTES)
+    decoded_raw_id = decode_base64url(credential["rawId"], maximum: MAX_CREDENTIAL_ID_BYTES)
+    return false unless decoded_id && decoded_raw_id && decoded_id.bytesize == decoded_raw_id.bytesize
+    return false unless ActiveSupport::SecurityUtils.fixed_length_secure_compare(decoded_id, decoded_raw_id)
+    return false unless optional_bounded_string?(
+      credential["authenticatorAttachment"],
+      maximum: MAX_AUTHENTICATOR_ATTACHMENT_BYTES
+    )
+    return false unless credential["clientExtensionResults"].nil? ||
+      credential["clientExtensionResults"].is_a?(Hash)
 
     response = credential["response"]
     return false unless response.is_a?(Hash)
-    return false unless bounded_string?(response["attestationObject"], maximum: MAX_ATTESTATION_BYTES)
-    return false unless bounded_string?(response["clientDataJSON"], maximum: MAX_CLIENT_DATA_BYTES)
+    return false unless decode_base64url(response["attestationObject"], maximum: MAX_ATTESTATION_BYTES)
+    return false unless decode_base64url(response["clientDataJSON"], maximum: MAX_CLIENT_DATA_BYTES)
 
     transports = response["transports"]
-    transports.nil? || transports.is_a?(Array)
+    transports.nil? || transports.is_a?(Array) &&
+      transports.length <= OwnerCredential::TRANSPORTS.length &&
+      transports.all? { |transport| OwnerCredential::TRANSPORTS.include?(transport) }
+  end
+
+  def verify_registration(public_key_credential, challenge:)
+    relying_party = webauthn.relying_party
+    relying_party.verify_registration(
+      public_key_credential,
+      challenge,
+      user_verification: true
+    )
+  rescue StandardError
+    reject!
+  end
+
+  def decode_base64url(value, maximum:)
+    return unless bounded_string?(value, maximum:) && value.match?(BASE64URL_FORMAT)
+
+    decoded = Base64.urlsafe_decode64(value)
+    return unless Base64.urlsafe_encode64(decoded, padding: false) == value
+
+    decoded
+  rescue ArgumentError
+    nil
+  end
+
+  def optional_bounded_string?(value, maximum:)
+    value.nil? || bounded_string?(value, maximum:)
   end
 
   def bounded_string?(value, maximum:)

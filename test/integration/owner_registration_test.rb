@@ -2,6 +2,7 @@
 
 require "test_helper"
 
+require "base64"
 require "digest"
 require "nokogiri"
 require "securerandom"
@@ -137,6 +138,36 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
     end
     assert_nil ceremony_model.find(ceremony.id).consumed_at
 
+    valid_credential = WebAuthn::FakeClient
+      .new("http://localhost")
+      .create(challenge: public_key.fetch("challenge"), rp_id: "localhost", user_verified: true)
+
+    mismatched_id_credential = valid_credential.deep_dup
+    mismatched_id_credential["id"] = Base64.urlsafe_encode64("mismatched-credential-id", padding: false)
+    malformed_attestation_credential = valid_credential.deep_dup
+    malformed_attestation_credential["response"]["attestationObject"] = Base64.urlsafe_encode64(
+      "malformed-attestation",
+      padding: false
+    )
+
+    {
+      "Mismatched passkey" => mismatched_id_credential,
+      "Malformed attestation" => malformed_attestation_credential
+    }.each do |label, attacker_credential|
+      assert_no_difference -> { Owner.count }, -> { table_count("owner_credentials") } do
+        post "/owner/bootstrap",
+          params: {
+            ceremony_secret:,
+            credential_label: label,
+            public_key_credential: attacker_credential
+          },
+          headers: request_headers,
+          as: :json
+        assert_response :not_found
+      end
+      assert_nil ceremony_model.find(ceremony.id).consumed_at
+    end
+
     assert_no_difference -> { Owner.count }, -> { table_count("owner_credentials") } do
       post "/owner/bootstrap",
         params: {
@@ -149,10 +180,6 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
       assert_response :not_found
     end
     assert_nil ceremony_model.find(ceremony.id).consumed_at
-
-    valid_credential = WebAuthn::FakeClient
-      .new("http://localhost")
-      .create(challenge: public_key.fetch("challenge"), rp_id: "localhost", user_verified: true)
 
     assert_difference -> { Owner.count } => 1, -> { table_count("owner_credentials") } => 1 do
       post "/owner/bootstrap",
