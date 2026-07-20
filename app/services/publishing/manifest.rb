@@ -25,6 +25,20 @@ module Publishing
       new(normalized.fetch("entries"))
     end
 
+    def self.from_release(release)
+      return unless release
+
+      build(entries: release.manifest_entries.includes(:blob).map do |entry|
+        {
+          path: entry.path,
+          sha256: entry.blob.sha256,
+          size: entry.byte_size,
+          content_type: entry.content_type,
+          offline_policy: entry.offline_policy
+        }
+      end)
+    end
+
     def initialize(entries)
       @entries = entries.map(&:freeze).freeze
       @canonical_json = JSON.generate("entries" => @entries).freeze

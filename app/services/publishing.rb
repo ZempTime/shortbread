@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "digest"
-require "json"
 
 module Publishing
   PLAN_LIFETIME = 24.hours
@@ -21,9 +20,9 @@ module Publishing
     key = idempotency_key.to_s
     raise IdempotencyKeyRequired if key.empty? || key.bytesize > 512 || key.match?(/[\r\n]/)
 
-    normalized_manifest = normalize_manifest(manifest)
-    canonical = JSON.generate(normalized_manifest)
-    manifest_sha256 = Digest::SHA256.hexdigest(canonical)
+    candidate_manifest = Manifest.build(entries: manifest.to_h.stringify_keys.fetch("entries", nil))
+    normalized_manifest = { "entries" => candidate_manifest.entries }
+    manifest_sha256 = candidate_manifest.sha256
     key_digest = Digest::SHA256.hexdigest(key)
 
     site.with_lock do
@@ -106,6 +105,11 @@ module Publishing
     { "entries" => normalized.sort_by { |entry| entry.fetch("path") } }
   rescue KeyError, NoMethodError, TypeError
     raise InvalidManifest
+  end
+
+  def delta_for(publish_plan)
+    candidate = Manifest.build(entries: publish_plan.manifest.fetch("entries"))
+    candidate.delta_from(Manifest.from_release(publish_plan.base_release))
   end
 
   def preflight_blobs(entries:, blob_store:)
