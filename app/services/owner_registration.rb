@@ -5,12 +5,17 @@ require "cbor"
 require "digest"
 require "json"
 require "openssl"
+require "stringio"
 require "webauthn"
 
 class OwnerRegistration
+  AAGUID_BYTES = 16
+  ATTESTED_CREDENTIAL_DATA_FLAG = 0b0100_0000
   ATTESTATION_OBJECT_KEYS = %w[attStmt authData fmt].freeze
+  AUTHENTICATOR_FLAGS_OFFSET = 32
   AUTHENTICATOR_DATA_MINIMUM_BYTES = 37
   BASE64URL_FORMAT = /\A[A-Za-z0-9_-]+\z/
+  CREDENTIAL_ID_LENGTH_BYTES = 2
   MAX_ATTESTATION_BYTES = 131_072
   MAX_AUTHENTICATOR_ATTACHMENT_BYTES = 64
   MAX_CLIENT_DATA_BYTES = 16_384
@@ -28,6 +33,7 @@ class OwnerRegistration
     OpenSSL::OpenSSLError
   ].freeze
 
+  AttestedCredentialData = Data.define(:id, :algorithm)
   Result = Data.define(:owner)
 
   class Rejected < StandardError
@@ -138,7 +144,14 @@ class OwnerRegistration
 
     response = credential["response"]
     return false unless response.is_a?(Hash)
-    return false unless valid_none_attestation_object?(response["attestationObject"])
+    attested_credential = parse_none_attested_credential(response["attestationObject"])
+    return false unless attested_credential &&
+      webauthn.relying_party.algorithms.include?(attested_credential.algorithm)
+    return false unless decoded_raw_id.bytesize == attested_credential.id.bytesize
+    return false unless ActiveSupport::SecurityUtils.fixed_length_secure_compare(
+      decoded_raw_id,
+      attested_credential.id
+    )
     return false unless decode_base64url(response["clientDataJSON"], maximum: MAX_CLIENT_DATA_BYTES)
 
     transports = response["transports"]
@@ -161,21 +174,50 @@ class OwnerRegistration
     end
   end
 
-  def valid_none_attestation_object?(encoded_attestation_object)
+  def parse_none_attested_credential(encoded_attestation_object)
     attestation_bytes = decode_base64url(encoded_attestation_object, maximum: MAX_ATTESTATION_BYTES)
-    return false unless attestation_bytes
+    return unless attestation_bytes
 
     attestation_object = CBOR.decode(attestation_bytes)
-    return false unless attestation_object.is_a?(Hash) &&
+    return unless attestation_object.is_a?(Hash) &&
       attestation_object.size == ATTESTATION_OBJECT_KEYS.size &&
       ATTESTATION_OBJECT_KEYS.all? { |key| attestation_object.key?(key) }
-    return false unless attestation_object["fmt"] == "none" && attestation_object["attStmt"] == {}
+    return unless attestation_object["fmt"] == "none" && attestation_object["attStmt"] == {}
 
     authenticator_data = attestation_object["authData"]
-    authenticator_data.is_a?(String) && authenticator_data.encoding == Encoding::BINARY &&
+    return unless authenticator_data.is_a?(String) && authenticator_data.encoding == Encoding::BINARY &&
       authenticator_data.bytesize.between?(AUTHENTICATOR_DATA_MINIMUM_BYTES, MAX_ATTESTATION_BYTES)
-  rescue CBOR::UnpackError, CBOR::TypeError
-    false
+    authenticator_flags = authenticator_data.getbyte(AUTHENTICATOR_FLAGS_OFFSET)
+    return unless (authenticator_flags & ATTESTED_CREDENTIAL_DATA_FLAG).positive?
+
+    credential_id_length_offset = AUTHENTICATOR_DATA_MINIMUM_BYTES + AAGUID_BYTES
+    credential_id_offset = credential_id_length_offset + CREDENTIAL_ID_LENGTH_BYTES
+    credential_id_length_bytes = authenticator_data.byteslice(
+      credential_id_length_offset,
+      CREDENTIAL_ID_LENGTH_BYTES
+    )
+    return unless credential_id_length_bytes&.bytesize == CREDENTIAL_ID_LENGTH_BYTES
+
+    credential_id_length = credential_id_length_bytes.unpack1("n")
+    return unless credential_id_length.between?(1, MAX_CREDENTIAL_ID_BYTES)
+
+    public_key_offset = credential_id_offset + credential_id_length
+    return unless public_key_offset < authenticator_data.bytesize
+
+    credential_id = authenticator_data.byteslice(credential_id_offset, credential_id_length)
+    return unless credential_id&.bytesize == credential_id_length
+
+    public_key_bytes = authenticator_data.byteslice(public_key_offset..)
+    public_key_map = CBOR::Unpacker.new(StringIO.new(public_key_bytes)).each.first
+    return unless public_key_map.is_a?(Hash)
+
+    cose_key = COSE::Key.deserialize(CBOR.encode(public_key_map))
+    algorithm = COSE::Algorithm.find(cose_key.alg)
+    return unless algorithm
+
+    AttestedCredentialData.new(id: credential_id, algorithm: algorithm.name)
+  rescue CBOR::UnpackError, CBOR::TypeError, COSE::Error, ArgumentError, TypeError, EncodingError
+    nil
   end
 
   def decode_base64url(value, maximum:)
