@@ -56,11 +56,42 @@ class ProductionRuntimeTest < ActiveSupport::TestCase
     refute_includes runtime.inventory.to_s, credential
   end
 
+  test "only the web role requires and inventories the Producer credential" do
+    environment = VALID_ENVIRONMENT.except("SHORTBREAD_BOOTSTRAP_TOKEN")
+
+    %w[migrate worker cable].each do |role|
+      runtime = Shortbread::ProductionRuntime.new(environment, role:)
+
+      assert runtime.validate!, role
+      refute_includes runtime.inventory, "SHORTBREAD_BOOTSTRAP_TOKEN", role
+    end
+  end
+
+  test "the Producer credential is exactly 64 lowercase hexadecimal characters" do
+    invalid_credentials = [
+      "a" * 63,
+      "a" * 65,
+      "A" * 64,
+      "g" * 64,
+      ("a" * 63) + "!"
+    ]
+
+    invalid_credentials.each do |credential|
+      error = assert_raises(Shortbread::ProductionRuntime::InvalidConfiguration) do
+        Shortbread::ProductionRuntime.new(
+          VALID_ENVIRONMENT.merge("SHORTBREAD_BOOTSTRAP_TOKEN" => credential)
+        ).validate!
+      end
+
+      assert_includes error.message, "SHORTBREAD_BOOTSTRAP_TOKEN must contain exactly 64 lowercase hexadecimal characters"
+      refute_includes error.message, credential
+    end
+  end
+
   test "contradictory configuration fails before a process can start" do
     contradictions = {
       "same primary and queue database" => { "QUEUE_DATABASE_URL" => VALID_ENVIRONMENT.fetch("DATABASE_URL") },
       "development AnyCable secret" => { "ANYCABLE_SECRET" => "shortbread-development-only" },
-      "short Producer bootstrap credential" => { "SHORTBREAD_BOOTSTRAP_TOKEN" => "too-short" },
       "relative Blob root" => { "SHORTBREAD_BLOB_ROOT" => "tmp/blobs" },
       "apex URL instead of host" => { "SHORTBREAD_APEX_HOST" => "https://shortbread.example" },
       "plain production WebSocket" => { "ANYCABLE_WEBSOCKET_URL" => "ws://shortbread.example/cable" }

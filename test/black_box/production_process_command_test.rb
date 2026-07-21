@@ -4,6 +4,7 @@ require "test_helper"
 
 require "json"
 require "open3"
+require "yaml"
 
 class ProductionProcessCommandTest < ActiveSupport::TestCase
   VALID_ENVIRONMENT = {
@@ -59,9 +60,37 @@ class ProductionProcessCommandTest < ActiveSupport::TestCase
     end
   end
 
+  test "non-web process inventories neither require nor expose the Producer credential" do
+    environment = VALID_ENVIRONMENT.except("SHORTBREAD_BOOTSTRAP_TOKEN")
+
+    %w[migrate worker cable].each do |role|
+      stdout, stderr, status = run_production("config", environment, role)
+
+      assert status.success?, "#{role}: #{stderr}"
+      refute_includes JSON.parse(stdout), "SHORTBREAD_BOOTSTRAP_TOKEN", role
+    end
+
+    _, stderr, status = run_production("config", environment, "web")
+    assert_equal 78, status.exitstatus
+    assert_equal "production configuration error: missing production configuration: SHORTBREAD_BOOTSTRAP_TOKEN\n", stderr
+  end
+
+  test "Compose injects the Producer credential into web only" do
+    compose = YAML.safe_load(
+      Rails.root.join("compose.production.yml").read,
+      aliases: true
+    )
+    services = compose.fetch("services")
+
+    assert services.fetch("web").fetch("environment").key?("SHORTBREAD_BOOTSTRAP_TOKEN")
+    %w[migrate worker cable].each do |role|
+      refute services.fetch(role).fetch("environment").key?("SHORTBREAD_BOOTSTRAP_TOKEN"), role
+    end
+  end
+
   private
 
-  def run_production(role, environment)
-    Open3.capture3(environment, Rails.root.join("bin/production").to_s, role, chdir: Rails.root.to_s)
+  def run_production(role, environment, *arguments)
+    Open3.capture3(environment, Rails.root.join("bin/production").to_s, role, *arguments, chdir: Rails.root.to_s)
   end
 end
