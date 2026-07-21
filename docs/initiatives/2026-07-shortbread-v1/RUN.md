@@ -45,10 +45,10 @@
 | Dirty state | Root and new U03 worktree were clean at claim; no overlapping implementation or open PR exists |
 | Collision | U03 is the only active product implementation. U04 stays blocked and U05 auth/session work stays unscheduled until C02 |
 | Dependency state | Frozen dependency/tool versions, installer pins, telemetry controls, and lockfiles remain unchanged. Authorized PR #58 task-only changes are reconciled to the exact frozen `mise.toml` digest by reviewed [PR #60](https://github.com/ZempTime/shortbread/pull/60) at merge `1a65ae3` |
-| Review state | U03 is not yet review-ready. Full smoke plus test/static/build/security/bootstrap gates were green before `e58dbb6`; exact-commit image smoke/scan/SBOM evidence and fixed-head general plus operations/container/security reviews remain required |
+| Review state | U03 is not review-ready. Exact `e58dbb6` passed end-to-end smoke and local SBOM, but privacy-preserving offline Trivy blocked it with 30 HIGH/13 CRITICAL unfixed Debian Bookworm runtime findings; the implementation TDD loop is repairing only the final runtime base before repeating exact-head evidence |
 | Reserved surfaces | U03 exclusively owns container/release configuration, process commands, production environment validation, process-specific health routes/probes, production-shaped smoke harnesses, and root operations documentation. Dependency manifests/lockfiles, schema, unrelated routes, screenshots, and `agents/` remain forbidden without controller exception. General Standards + Spec review and an independent operations/container/security specialist review target the same fixed pushed head |
 | True stop | Product-scope/trust/authority change, preservation failure, or unreconcilable tracker mutation—not ordinary graph edits |
-| Next action | `/root/u03_implementation` completes exact-`e58dbb6` image smoke/scan/SBOM evidence and fixes the pushed review target for PR #61; do not start U04 until U03 integrates or U05/C02 in this context |
+| Next action | `/root/u03_implementation` moves the exact Ruby 3.4.10 final runtime stage from Bookworm to Trixie, proves native/runtime compatibility through the full smoke, and repeats the identical offline scan before fixing PR #61's review head; do not start U04 until U03 integrates or U05/C02 in this context |
 
 ## Campaign Model
 
