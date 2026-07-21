@@ -15,14 +15,17 @@ case "$port" in
 esac
 
 start_postgres() {
+  umask 077
   mkdir -p "$data_dir" "$socket_dir" "$app_root/log"
+  chmod 700 "$data_dir" "$socket_dir"
 
   if [[ ! -f "$data_dir/PG_VERSION" ]]; then
     initdb --auth=trust --encoding=UTF8 --no-locale -D "$data_dir"
   fi
 
   if ! pg_ctl -D "$data_dir" status >/dev/null 2>&1; then
-    printf -v postgres_options -- '-k %q -p %q' "$socket_dir" "$port"
+    printf -v postgres_options -- '-k %q -p %q -c %q -c %q' \
+      "$socket_dir" "$port" "listen_addresses=" "unix_socket_permissions=0700"
     pg_ctl -D "$data_dir" -l "$log_file" -o "$postgres_options" -w start
   fi
 }

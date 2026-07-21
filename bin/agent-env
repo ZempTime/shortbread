@@ -6,6 +6,8 @@ checksum=$(printf '%s' "$app_root" | cksum)
 checksum=${checksum%% *}
 state_root=${SHORTBREAD_AGENT_STATE_DIR:-"/private/tmp/shortbread-agent-$checksum"}
 
+umask 077
+
 rails_env=
 if [[ "${1:-}" == "--rails-env" ]]; then
   rails_env=${2:-}
@@ -25,7 +27,8 @@ fi
   exit 2
 }
 
-mkdir -p "$state_root"
+mkdir -p "$state_root/postgres"
+chmod 700 "$state_root" "$state_root/postgres"
 
 export SHORTBREAD_POSTGRES_DATA_DIR=${SHORTBREAD_POSTGRES_DATA_DIR:-"$state_root/postgres/data"}
 export SHORTBREAD_DATABASE_HOST=${SHORTBREAD_DATABASE_HOST:-"$state_root/postgres/socket"}
