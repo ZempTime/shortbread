@@ -5,13 +5,13 @@
 | Run | `2026-07-18-shortbread-v1` |
 | Work item | [ZempTime/shortbread](https://github.com/ZempTime/shortbread); direct design and authority conversation |
 | Initializer | Claude Code on Claude Fable 5 (`claude-fable-5`) |
-| Current controller | None; U03 is integrated and no campaign or product implementation is active |
+| Current controller | Codex `/root`; launch-alpha packaging issue #62 is active in one isolated worktree |
 | Accepted doctrine baseline | Repo-local MWP with bounded campaigns, fresh-context leaf units, TDD, proportionate independent review, durable pause/recovery, and explicit credential boundary |
 | Repository authority | Implement, review, repair, document, package, and prepare deployment of the accepted Shortbread v1 scope |
 | External authority | Configure the GitHub issue tracker; create/update issues, branches, commits, pull requests, releases, packages, and deployment configuration inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
-| State token | `campaign-paused` |
-| Current state | U03/#21 is integrated by PR #61. U04/#22 closed as not planned without implementation because the Operator selected the launch-today self-hosted path; U05 and the remaining unbuilt v1 backlog stay open, unassigned, and paused |
+| State token | `execution-active` |
+| Current state | U03/#21 is integrated by PR #61. Launch-alpha packaging #62 is active only to make that journey deployable on one self-hosted machine; U04/#22 remains closed as not planned, and U05 plus the remaining unbuilt v1 backlog stay open, unassigned, and paused |
 
 ## Input Snapshot
 
@@ -37,18 +37,18 @@
 
 | Field | State |
 |---|---|
-| Reconciled | 2026-07-21 by integration controller `/root`; reviewed U03 head `4b76c83cd2cc04f253157e97e8f235c8d1590fcb` is integrated by [PR #61](https://github.com/ZempTime/shortbread/pull/61) at merge `d30be56043cac9f20f8eec1aed2f51f9e2d03225`; #21 is closed and #22 is closed as not planned |
+| Reconciled | 2026-07-21 by launch controller `/root`; clean synchronized `main` is `abb256c560fe2944ffa4e9d4b9cb374618549f88`, reviewed U03 head `4b76c83cd2cc04f253157e97e8f235c8d1590fcb` is integrated by [PR #61](https://github.com/ZempTime/shortbread/pull/61), #21 is closed, #22 is closed as not planned, and bounded launch issue [#62](https://github.com/ZempTime/shortbread/issues/62) is claimed |
 | Integration branch/head | `main` contains U03 merge `d30be56043cac9f20f8eec1aed2f51f9e2d03225` plus this pause-state coordination update; the pinned U03 baseline remains `173f09644c140599a706fabfffee0ae0e1289437` |
 | Release candidate | No active U03 release candidate or draft PR remains. PR #61 merged exact reviewed head `4b76c83cd2cc04f253157e97e8f235c8d1590fcb`; it remains a production-shaped candidate, not a vulnerability-clean final image |
 | Auth source evidence | Historical `ticket-4-owner-cli-auth` remains local and remote at `8fcb22f`; its accepted U02 behavior is represented on main by PR #59, and the source branch is no longer merge material |
 | Worktrees | The clean U03 worktree and integrated local/remote branch were removed after ancestry proof. Unrelated U02, policy-repair, U01 implementation, and detached U01 replay evidence worktrees remain untouched |
 | Dirty state | Root `main` is clean and synchronized with `origin/main`; there is no U03 worktree, branch, or uncommitted evidence |
-| Collision | No product implementation is active. U04 was not started; U05 and all subsequent unbuilt v1 work remain unclaimed and paused |
+| Collision | Only launch-alpha packaging #62 is active. U04 was not started; U05 and all subsequent unbuilt v1 work remain unclaimed and paused |
 | Dependency state | Frozen dependency/tool versions, installer pins, telemetry controls, and lockfiles remain unchanged. Authorized PR #58 task-only changes are reconciled to the exact frozen `mise.toml` digest by reviewed [PR #60](https://github.com/ZempTime/shortbread/pull/60) at merge `1a65ae3` |
 | Review state | Independent Standards + Spec and operations/container/security reviewers approved exact pushed head `4b76c83cd2cc04f253157e97e8f235c8d1590fcb` with no remaining findings after test-first repairs; the [final PR review record](https://github.com/ZempTime/shortbread/pull/61#issuecomment-5037707914) owns the evidence and residual boundaries. The Operator-approved U28 scan disposition remains accepted |
-| Reserved surfaces | None. U03 reservations are released; no later unit has been claimed |
+| Reserved surfaces | Issue #62 exclusively reserves production deployment/runtime configuration, production smoke coverage, operations documentation, and this root run state. Dependency manifests, lockfiles, schema, product routes, and deferred feature surfaces are forbidden |
 | True stop | Product-scope/trust/authority change, preservation failure, or unreconcilable tracker mutation—not ordinary graph edits |
-| Next action | None authorized. Do not start U04 or any later v1 unit: the Operator selected the launch-today self-hosted path, and deployment preparation is outside this integration session. Any future work begins from explicit new Operator direction and a fresh reconciliation |
+| Next action | Complete issue #62 from the pinned `abb256c560fe2944ffa4e9d4b9cb374618549f88` baseline, review and merge its single-host deployment package, then name the exact deployable `main` SHA; do not deploy or start U04/any later v1 unit |
 
 ## Campaign Model
 
