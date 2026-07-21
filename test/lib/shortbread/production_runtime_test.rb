@@ -40,6 +40,23 @@ class ProductionRuntimeTest < ActiveSupport::TestCase
     end
   end
 
+  test "the Producer bootstrap credential is required and redacted" do
+    error = assert_raises(Shortbread::ProductionRuntime::InvalidConfiguration) do
+      Shortbread::ProductionRuntime.new(VALID_ENVIRONMENT).validate!
+    end
+
+    assert_equal "missing production configuration: SHORTBREAD_BOOTSTRAP_TOKEN", error.message
+
+    credential = "synthetic-runtime-bootstrap-credential-0123456789abcdef"
+    runtime = Shortbread::ProductionRuntime.new(
+      VALID_ENVIRONMENT.merge("SHORTBREAD_BOOTSTRAP_TOKEN" => credential)
+    )
+
+    assert runtime.validate!
+    assert_equal "[configured secret]", runtime.inventory.fetch("SHORTBREAD_BOOTSTRAP_TOKEN")
+    refute_includes runtime.inventory.to_s, credential
+  end
+
   test "contradictory configuration fails before a process can start" do
     contradictions = {
       "same primary and queue database" => { "QUEUE_DATABASE_URL" => VALID_ENVIRONMENT.fetch("DATABASE_URL") },
