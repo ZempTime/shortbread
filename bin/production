@@ -7,12 +7,27 @@ require_relative "../lib/shortbread/production_runtime"
 require_relative "../lib/shortbread/worker_health"
 
 begin
-  runtime = Shortbread::ProductionRuntime.new
+  command = ARGV.shift
+  role = case command
+  when "config"
+    ARGV.shift || "web"
+  when "health"
+    ARGV.first
+  when "migrate", "web", "worker", "cable"
+    command
+  end
+
+  valid_arguments = command == "health" ? ARGV.one? : ARGV.empty?
+  unless Shortbread::ProductionRuntime::PROCESS_ROLES.include?(role) && valid_arguments
+    warn "usage: bin/production config [web|migrate|worker|cable]|migrate|web|worker|cable|health web|worker|cable"
+    exit 64
+  end
+
+  ENV["SHORTBREAD_PROCESS_ROLE"] = role
+  runtime = Shortbread::ProductionRuntime.new(role:)
   runtime.validate!
 
-  role = ARGV.shift
-
-  case role
+  case command
   when "config"
     require "json"
     puts JSON.pretty_generate(runtime.inventory)
@@ -49,7 +64,7 @@ begin
       exit 64
     end
   else
-    warn "usage: bin/production config|migrate|web|worker|cable|health"
+    warn "usage: bin/production config [web|migrate|worker|cable]|migrate|web|worker|cable|health web|worker|cable"
     exit 64
   end
 rescue Shortbread::ProductionRuntime::InvalidConfiguration => error

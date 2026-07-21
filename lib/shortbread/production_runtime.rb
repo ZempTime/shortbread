@@ -5,7 +5,7 @@ require "uri"
 
 module Shortbread
   class ProductionRuntime
-    REQUIRED_KEYS = %w[
+    BASE_REQUIRED_KEYS = %w[
       ANYCABLE_HTTP_BROADCAST_URL
       ANYCABLE_RPC_HOST
       ANYCABLE_SECRET
@@ -16,8 +16,12 @@ module Shortbread
       SECRET_KEY_BASE
       SHORTBREAD_APEX_HOST
       SHORTBREAD_BLOB_ROOT
+    ].freeze
+    WEB_REQUIRED_KEYS = %w[
       SHORTBREAD_BOOTSTRAP_TOKEN
     ].freeze
+    REQUIRED_KEYS = (BASE_REQUIRED_KEYS + WEB_REQUIRED_KEYS).freeze
+    PROCESS_ROLES = %w[web migrate worker cable].freeze
     SECRET_KEYS = %w[
       ANYCABLE_SECRET
       DATABASE_URL
@@ -31,12 +35,15 @@ module Shortbread
 
     class InvalidConfiguration < StandardError; end
 
-    def initialize(environment = ENV)
+    def initialize(environment = ENV, role: "web")
       @environment = environment
+      @role = role.to_s
     end
 
     def validate!
-      missing = REQUIRED_KEYS.select { |key| @environment[key].to_s.empty? }
+      raise InvalidConfiguration, "unknown production process role" unless PROCESS_ROLES.include?(@role)
+
+      missing = required_keys.select { |key| @environment[key].to_s.empty? }
       raise InvalidConfiguration, "missing production configuration: #{missing.sort.join(', ')}" if missing.any?
 
       invalid = []
@@ -44,7 +51,9 @@ module Shortbread
       invalid << "SHORTBREAD_APEX_HOST must be a lowercase hostname without scheme or port" unless valid_host?
       invalid << "SHORTBREAD_BLOB_ROOT must be an absolute path" unless Pathname(@environment.fetch("SHORTBREAD_BLOB_ROOT")).absolute?
       invalid << "SECRET_KEY_BASE must contain at least 32 characters" unless valid_secret?("SECRET_KEY_BASE")
-      invalid << "SHORTBREAD_BOOTSTRAP_TOKEN must contain at least 32 visible characters" unless valid_bootstrap_token?
+      if @role == "web" && !valid_bootstrap_token?
+        invalid << "SHORTBREAD_BOOTSTRAP_TOKEN must contain exactly 64 lowercase hexadecimal characters"
+      end
       invalid << "ANYCABLE_SECRET must contain at least 32 characters and must not use a development value" unless valid_anycable_secret?
       invalid << "DATABASE_URL must be a PostgreSQL URL selecting a database" unless valid_postgresql_url?("DATABASE_URL")
       invalid << "QUEUE_DATABASE_URL must be a PostgreSQL URL selecting a database" unless valid_postgresql_url?("QUEUE_DATABASE_URL")
@@ -61,7 +70,7 @@ module Shortbread
     end
 
     def inventory
-      REQUIRED_KEYS.to_h do |key|
+      required_keys.to_h do |key|
         value = @environment[key].to_s
         rendered = if value.empty?
           "[missing]"
@@ -75,6 +84,10 @@ module Shortbread
     end
 
     private
+
+    def required_keys
+      @role == "web" ? REQUIRED_KEYS : BASE_REQUIRED_KEYS
+    end
 
     def valid_host?
       @environment.fetch("SHORTBREAD_APEX_HOST").match?(HOST_PATTERN)
@@ -90,7 +103,7 @@ module Shortbread
     end
 
     def valid_bootstrap_token?
-      @environment.fetch("SHORTBREAD_BOOTSTRAP_TOKEN").match?(/\A[!-~]{32,}\z/)
+      @environment.fetch("SHORTBREAD_BOOTSTRAP_TOKEN").match?(/\A[0-9a-f]{64}\z/)
     end
 
     def valid_endpoint_url?(key, schemes)

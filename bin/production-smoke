@@ -5,6 +5,19 @@ repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$repository_root"
 
 smoke_root=$(mktemp -d "${TMPDIR:-/tmp}/shortbread-production-smoke.XXXXXX")
+compose=()
+cleanup() {
+  if (( ${#compose[@]} > 0 )); then
+    if [[ "${SHORTBREAD_KEEP_PRODUCTION_SMOKE:-0}" == "1" ]]; then
+      echo "production runtime smoke retained: $project_name"
+    else
+      "${compose[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
+    fi
+  fi
+  rm -rf "$smoke_root"
+}
+trap cleanup EXIT
+
 environment_file="$smoke_root/runtime.env"
 contradictory_environment_file="$smoke_root/contradictory-runtime.env"
 project_name="shortbread-u03-smoke"
@@ -19,6 +32,23 @@ anycable_secret=$(openssl rand -hex 32)
 bootstrap_token=$(openssl rand -hex 32)
 primary_database_url="postgresql://shortbread:$postgres_password@postgres:5432/shortbread_production"
 queue_database_url="postgresql://shortbread:$postgres_password@postgres:5432/shortbread_production_queue"
+generated_secrets=(
+  "$bootstrap_token"
+  "$postgres_password"
+  "$secret_key_base"
+  "$anycable_secret"
+  "$primary_database_url"
+  "$queue_database_url"
+)
+contains_generated_secret() {
+  local output=$1
+  local secret
+  for secret in "${generated_secrets[@]}"; do
+    [[ "$output" == *"$secret"* ]] && return 0
+  done
+  return 1
+}
+
 printf '%s\n' \
   "COMPOSE_PROJECT_NAME=$project_name" \
   "SHORTBREAD_IMAGE=$image" \
@@ -40,16 +70,6 @@ cp "$environment_file" "$contradictory_environment_file"
 printf '%s\n' "QUEUE_DATABASE_URL=$primary_database_url" >>"$contradictory_environment_file"
 
 compose=(docker compose --project-name "$project_name" --env-file "$environment_file" --file compose.production.yml)
-
-cleanup() {
-  if [[ "${SHORTBREAD_KEEP_PRODUCTION_SMOKE:-0}" == "1" ]]; then
-    echo "production runtime smoke retained: $project_name"
-  else
-    "${compose[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
-  fi
-  rm -rf "$smoke_root"
-}
-trap cleanup EXIT
 
 "${compose[@]}" config --quiet
 
@@ -78,13 +98,12 @@ contradictory_output=$(docker run --rm --env-file "$contradictory_environment_fi
   "$image" web 2>&1)
 contradictory_status=$?
 set -e
-if [[ "$contradictory_status" != "78" || "$contradictory_output" != *"distinct databases"* ]]; then
-  echo "contradictory configuration did not fail before serving" >&2
-  echo "$contradictory_output" >&2
+if contains_generated_secret "$contradictory_output"; then
+  echo "contradictory configuration did not fail closed" >&2
   exit 1
 fi
-if [[ "$contradictory_output" == *"$postgres_password"* || "$contradictory_output" == *"$bootstrap_token"* ]]; then
-  echo "configuration failure exposed a configured secret" >&2
+if [[ "$contradictory_status" != "78" || "$contradictory_output" != *"distinct databases"* ]]; then
+  echo "contradictory configuration did not fail closed" >&2
   exit 1
 fi
 echo "fail-fast configuration: green"
@@ -143,13 +162,28 @@ if [[ "$migrate_exit" != "0" || "$migrate_finished" > "$web_started" ]]; then
   exit 1
 fi
 
+for service in migrate worker cable; do
+  container_id=$("${compose[@]}" ps --all --quiet "$service")
+  service_environment=$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$container_id")
+  if [[ "$service_environment" == *"SHORTBREAD_BOOTSTRAP_TOKEN="* ]]; then
+    echo "$service received the web-only Producer credential" >&2
+    exit 1
+  fi
+done
+web_environment=$(docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$web_id")
+if [[ "$web_environment" != *"SHORTBREAD_BOOTSTRAP_TOKEN=$bootstrap_token"* ]]; then
+  echo "web did not receive the Producer credential" >&2
+  exit 1
+fi
+echo "Producer credential role isolation: green"
+
 "${compose[@]}" exec --no-TTY web bin/production health web
 "${compose[@]}" exec --no-TTY worker bin/production health worker
 "${compose[@]}" exec --no-TTY cable bin/production health cable
 "${compose[@]}" exec --no-TTY web bin/rails runner \
   'abort "primary migrations missing" if ActiveRecord::Base.connection_pool.migration_context.get_all_versions.empty?; abort "queue schema missing" unless SolidQueue::Process.table_exists?; puts "migration ordering: green"'
 inventory_output=$("${compose[@]}" exec --no-TTY web bin/production config)
-if [[ "$inventory_output" == *"$bootstrap_token"* || "$inventory_output" == *"$postgres_password"* ]]; then
+if contains_generated_secret "$inventory_output"; then
   echo "configuration inventory exposed a configured secret" >&2
   exit 1
 fi

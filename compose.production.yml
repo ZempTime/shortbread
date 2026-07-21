@@ -13,7 +13,6 @@ x-app: &app
     SECRET_KEY_BASE: ${SECRET_KEY_BASE:?set SECRET_KEY_BASE}
     SHORTBREAD_APEX_HOST: ${SHORTBREAD_APEX_HOST:?set SHORTBREAD_APEX_HOST}
     SHORTBREAD_BLOB_ROOT: /var/lib/shortbread/blobs
-    SHORTBREAD_BOOTSTRAP_TOKEN: ${SHORTBREAD_BOOTSTRAP_TOKEN:?set SHORTBREAD_BOOTSTRAP_TOKEN}
   read_only: true
   restart: unless-stopped
   tmpfs:
@@ -41,6 +40,9 @@ services:
   migrate:
     <<: *app
     command: ["migrate"]
+    environment:
+      <<: *app_environment
+      SHORTBREAD_PROCESS_ROLE: migrate
     depends_on:
       postgres:
         condition: service_healthy
@@ -49,6 +51,10 @@ services:
   web:
     <<: *app
     command: ["web"]
+    environment:
+      <<: *app_environment
+      SHORTBREAD_BOOTSTRAP_TOKEN: ${SHORTBREAD_BOOTSTRAP_TOKEN:?set SHORTBREAD_BOOTSTRAP_TOKEN}
+      SHORTBREAD_PROCESS_ROLE: web
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -68,6 +74,9 @@ services:
   worker:
     <<: *app
     command: ["worker"]
+    environment:
+      <<: *app_environment
+      SHORTBREAD_PROCESS_ROLE: worker
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -81,6 +90,9 @@ services:
   cable:
     <<: *app
     command: ["cable"]
+    environment:
+      <<: *app_environment
+      SHORTBREAD_PROCESS_ROLE: cable
     depends_on:
       web:
         condition: service_healthy

@@ -11,7 +11,7 @@ cp .env.production.example .env.production.local
 chmod 600 .env.production.local
 ```
 
-For the checked-in Compose stack, the database host is `postgres`; `DATABASE_URL` and `QUEUE_DATABASE_URL` must select distinct PostgreSQL databases. The internal AnyCable endpoints are `http://shortbread.localhost:3000/_anycable` and `http://cable:8090/_broadcast`. Use synthetic local secrets of at least 32 characters. Never commit the completed file.
+For the checked-in Compose stack, the database host is `postgres`; `DATABASE_URL` and `QUEUE_DATABASE_URL` must select distinct PostgreSQL databases. The internal AnyCable endpoints are `http://shortbread.localhost:3000/_anycable` and `http://cable:8090/_broadcast`. Use synthetic local secrets of at least 32 characters. `SHORTBREAD_BOOTSTRAP_TOKEN` is a web-only Producer credential and must be exactly 64 lowercase hexadecimal characters so it is safe in the unquoted Compose environment file. Generate it through a private secret-manager/editor boundary; never print it or place it in a command argument. Never commit the completed file.
 
 Build and start the candidate:
 
@@ -53,7 +53,7 @@ docker compose --env-file .env.production.local --file compose.production.yml lo
 docker compose --env-file .env.production.local --file compose.production.yml exec web bin/production config
 ```
 
-The `config` inventory redacts secrets and database URLs. Missing or contradictory configuration exits with status 78 before a role starts. In particular, production requires a valid lowercase apex hostname, distinct PostgreSQL databases, an absolute Blob root, non-development secrets, HTTP AnyCable RPC/broadcast URLs, and a secure public WebSocket URL.
+The `config` inventory redacts secrets and database URLs. Missing or contradictory configuration exits with status 78 before a role starts. In particular, production requires a valid lowercase apex hostname, distinct PostgreSQL databases, an absolute Blob root, non-development secrets, HTTP AnyCable RPC/broadcast URLs, and a secure public WebSocket URL. Only `web` receives, requires, or inventories `SHORTBREAD_BOOTSTRAP_TOKEN`; `migrate`, `worker`, and `cable` do not receive the Producer credential.
 
 ## Restart and stop
 

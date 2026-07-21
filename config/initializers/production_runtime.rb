@@ -2,4 +2,6 @@
 
 require "shortbread/production_runtime"
 
-Shortbread::ProductionRuntime.new.validate! if Rails.env.production?
+if Rails.env.production?
+  Shortbread::ProductionRuntime.new(role: ENV.fetch("SHORTBREAD_PROCESS_ROLE", "web")).validate!
+end
