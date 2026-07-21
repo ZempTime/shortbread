@@ -5,13 +5,13 @@
 | Run | `2026-07-18-shortbread-v1` |
 | Work item | [ZempTime/shortbread](https://github.com/ZempTime/shortbread); direct design and authority conversation |
 | Initializer | Claude Code on Claude Fable 5 (`claude-fable-5`) |
-| Current controller | None; the next fresh controller claims C00/U02 |
+| Current controller | Codex (`ship-goal`); C00/U02 resumed on 2026-07-21 |
 | Accepted doctrine baseline | Repo-local MWP with bounded campaigns, fresh-context leaf units, TDD, proportionate independent review, durable pause/recovery, and explicit credential boundary |
 | Repository authority | Implement, review, repair, document, package, and prepare deployment of the accepted Shortbread v1 scope |
 | External authority | Configure the GitHub issue tracker; create/update issues, branches, commits, pull requests, releases, packages, and deployment configuration inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
-| State token | `campaign-ready` |
-| Current state | U01/#19 is integrated through PR #57; U02/#20 is the sole executable frontier and no product implementation is active |
+| State token | `execution-active` |
+| Current state | U01/#19 is integrated; U02/#20 is implemented in draft PR #59 at approved head `0ff26c8` and is frozen pending a controller-owned repair of the inherited dependency-policy digest mismatch introduced by merged PR #58 |
 
 ## Input Snapshot
 
@@ -30,25 +30,25 @@
 | 02 Original ticket map | Complete; superseded for execution only | [Original graph](02_ticket_map/output/2026-07-18-ticket-map.md) / GitHub #2–#17 remain acceptance history |
 | 03 Whole-goal handoff | Historical; superseded | [`GOAL.md`](03_goal_handoff/output/GOAL.md) is retained but must not be relaunched |
 | 04 Original execution | Paused after interrupted attempt | #2 integrated; #3/#4 partial branch evidence preserved under [`04_execution/`](04_execution/) |
-| 05 Delivery replan | Complete; U01 integrated and U02 campaign-ready | [Bounded campaign/unit graph](05_delivery_replan/output/2026-07-20-delivery-plan.md), [unit contract](05_delivery_replan/output/UNIT-CONTRACT.md), [published tracker](05_delivery_replan/output/tracker.md), [integrated U01/#19](https://github.com/ZempTime/shortbread/issues/19), and [frontier U02/#20](https://github.com/ZempTime/shortbread/issues/20) |
+| 05 Delivery replan | Complete; C00 resumed with U01 integrated and U02 at its integration gate | [Bounded campaign/unit graph](05_delivery_replan/output/2026-07-20-delivery-plan.md), [unit contract](05_delivery_replan/output/UNIT-CONTRACT.md), [published tracker](05_delivery_replan/output/tracker.md), [integrated U01/#19](https://github.com/ZempTime/shortbread/issues/19), [U02/#20](https://github.com/ZempTime/shortbread/issues/20), and draft [PR #59](https://github.com/ZempTime/shortbread/pull/59) |
 | 99 Harvest | Complete for setup and #2; interrupted-run learning promoted into MWP | [Setup harvest](99_harvest/output/2026-07-18-goal-setup-harvest.md) plus Stage 05 process corrections |
 
 ## Recovery Capsule
 
 | Field | State |
 |---|---|
-| Reconciled | 2026-07-20, after reviewed U01 integration and U02 frontier promotion |
-| Integration branch/head | `main`; product code includes merged #2 at `f2e0326` and U01 [#57](https://github.com/ZempTime/shortbread/pull/57) at merge `45db8bd`; the commit containing this capsule is the coordination head |
-| Release candidate | U01 fixed candidate `21a08c9` is integrated as merge `45db8bd`; preserved `ticket-3-releases-rollback@f5943d7` remains fixed source/review evidence only |
+| Reconciled | 2026-07-21, against GitHub, local/remote refs, clean worktrees, merged PR #58, issue #20, and draft PR #59 |
+| Integration branch/head | `main@ab6e30e` locally and on `origin`; this capsule is the next coordination-only main commit before the isolated dependency-policy repair |
+| Release candidate | U02 draft [PR #59](https://github.com/ZempTime/shortbread/pull/59) is fixed at local/remote `u02-owner-bootstrap@0ff26c8`; do not amend or rewrite that reviewed history |
 | Auth source evidence | `ticket-4-owner-cli-auth` local and remote at `8fcb22f`; no PR; replay semantically only after U01 |
-| Worktrees | No active execution worktree; inactive U01 implementation and detached clean-replay worktrees remain durable evidence; old ticket 3/4 registrations were pruned after their remote heads were verified |
-| Dirty state | Clean after this coordination-only frontier handoff; no product implementation is active |
-| Collision | Both preserved branches edit `config/routes.rb`; Release branch removes `db/schema.rb` for SQL structure dumps while auth branch edits it |
-| Dependency state | Frozen/audited at `3c40a67`; manifest/lock/tool changes require ADR 0007 exception |
-| Review state | Preserved source `f5943d7` was rejected as merge material; independent Standards + Spec and data-integrity reviews both approved exact U01 candidate `21a08c9` with no blockers or should-fix findings |
-| Reserved surfaces | None until a fresh C00 controller claims U02 and records its branch, worktree, baseline, review target, and auth-specific edit surfaces |
+| Worktrees | Clean U02 implementation worktree `/private/tmp/shortbread-u02` at `0ff26c8`; inactive clean U01 implementation and detached replay worktrees remain durable evidence |
+| Dirty state | Main and all registered worktrees were clean at reconciliation; U02 remains frozen while the controller works in a separate policy-repair branch/worktree |
+| Collision | Merged PR #58 changed governed `mise.toml`; frozen `script/check_dependency_policy.rb` still records the prior digest, so `mise run security` fails on clean main and U02 without either branch having changed dependency versions or lockfiles |
+| Dependency state | Frozen/audited dependency and tool versions remain unchanged; the controller must confirm PR #58's governed task-only change is authorized under ADR 0007 before updating only its approved digest |
+| Review state | Independent auth re-review approved exact U02 head `0ff26c8` with no remaining blocker, should-fix, or note findings; its full relevant evidence is green except the inherited mainline dependency-policy mismatch |
+| Reserved surfaces | Controller exclusively owns `script/check_dependency_policy.rb`, the isolated policy-repair branch/worktree, root run/tracker state, and GitHub integration; U02 owns its existing auth/schema/routes/tests and remains frozen until main is merged into it |
 | True stop | Product-scope/trust/authority change, preservation failure, or unreconcilable tracker mutation—not ordinary graph edits |
-| Next action | A fresh C00 controller claims [U02/#20](https://github.com/ZempTime/shortbread/issues/20), reads its unit card and current packet, and semantically replays only accepted auth behavior from `ticket-4-owner-cli-auth@8fcb22f` onto current `main`; do not relaunch U01 or reuse stale schema output |
+| Next action | Audit merged [PR #58](https://github.com/ZempTime/shortbread/pull/58) against the active authority and frozen dependency contract; if authorized, update only the governed `mise.toml` digest in an isolated controller branch/worktree, run complete security/dependency/license evidence, obtain exact-head review, and integrate that repair into `main` before updating PR #59 |
 
 ## Campaign Model
 
