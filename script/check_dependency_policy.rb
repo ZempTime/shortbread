@@ -23,7 +23,7 @@ APPROVED_SHA256 = {
   "cli/go.mod" => "7fa082a96a652f0f16d2fef69e642a10b6bfad90e5f5c7401bd7ba6a7c48f6d0",
   "cli/go.sum" => "d545e881576b1331ef5dad5780a92b42c33968d425858981b7458f1741d6eb3e",
   "mise.lock" => "98ec06ddfbd67a83fe1bbc09e35db7c7377b567769d59c335ac7cfd60b827407",
-  "mise.toml" => "6ca571722feeb327af42c691ad42313462277899d4c2b375ef00cdfd43462e77"
+  "mise.toml" => "03df9c178a1c327709026b50fe9b68efe6123698520ef739192ab24823fba70b"
 }.freeze
 FORBIDDEN = %w[
   airbrake
