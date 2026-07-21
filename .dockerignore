@@ -1,0 +1,15 @@
+.git
+.agents
+.claude
+.codex
+.env
+.env.*
+!.env.production.example
+agents
+cli
+docs
+log/*
+node_modules
+storage
+test
+tmp/*

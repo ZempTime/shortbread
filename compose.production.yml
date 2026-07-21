@@ -1,0 +1,97 @@
+name: ${COMPOSE_PROJECT_NAME:-shortbread-production}
+
+x-app: &app
+  image: ${SHORTBREAD_IMAGE:-shortbread:production-candidate}
+  environment: &app_environment
+    ANYCABLE_HTTP_BROADCAST_URL: ${ANYCABLE_HTTP_BROADCAST_URL:?set ANYCABLE_HTTP_BROADCAST_URL}
+    ANYCABLE_RPC_HOST: ${ANYCABLE_RPC_HOST:?set ANYCABLE_RPC_HOST}
+    ANYCABLE_SECRET: ${ANYCABLE_SECRET:?set ANYCABLE_SECRET}
+    ANYCABLE_WEBSOCKET_URL: ${ANYCABLE_WEBSOCKET_URL:?set ANYCABLE_WEBSOCKET_URL}
+    DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+    QUEUE_DATABASE_URL: ${QUEUE_DATABASE_URL:?set QUEUE_DATABASE_URL}
+    RAILS_ENV: production
+    SECRET_KEY_BASE: ${SECRET_KEY_BASE:?set SECRET_KEY_BASE}
+    SHORTBREAD_APEX_HOST: ${SHORTBREAD_APEX_HOST:?set SHORTBREAD_APEX_HOST}
+    SHORTBREAD_BLOB_ROOT: /var/lib/shortbread/blobs
+  read_only: true
+  restart: unless-stopped
+  tmpfs:
+    - /app/tmp:uid=10001,gid=10001,mode=0700
+    - /home/shortbread:uid=10001,gid=10001,mode=0700
+    - /tmp:uid=10001,gid=10001,mode=0700
+  volumes:
+    - blobs:/var/lib/shortbread/blobs
+
+services:
+  postgres:
+    image: postgres:17.10-bookworm
+    environment:
+      POSTGRES_PASSWORD: ${SHORTBREAD_POSTGRES_PASSWORD:?set SHORTBREAD_POSTGRES_PASSWORD}
+      POSTGRES_USER: shortbread
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --username shortbread --dbname postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+    volumes:
+      - postgres:/var/lib/postgresql/data
+
+  migrate:
+    <<: *app
+    command: ["migrate"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "on-failure:3"
+
+  web:
+    <<: *app
+    command: ["web"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "bin/production", "health", "web"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 10s
+    networks:
+      default:
+        aliases:
+          - ${SHORTBREAD_APEX_HOST:?set SHORTBREAD_APEX_HOST}
+    ports:
+      - "127.0.0.1:${SHORTBREAD_WEB_PORT:-13000}:3000"
+
+  worker:
+    <<: *app
+    command: ["worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "bin/production", "health", "worker"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+
+  cable:
+    <<: *app
+    command: ["cable"]
+    depends_on:
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bin/production", "health", "cable"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    ports:
+      - "127.0.0.1:${SHORTBREAD_CABLE_PORT:-18080}:8080"
+
+volumes:
+  blobs:
+  postgres:
