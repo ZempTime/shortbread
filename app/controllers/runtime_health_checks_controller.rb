@@ -15,6 +15,6 @@ class RuntimeHealthChecksController < ActionController::API
 
   def private_blob_ready?
     root = ENV.fetch("SHORTBREAD_BLOB_ROOT", Rails.root.join("tmp", "blob-store"))
-    File.directory?(root) && File.writable?(root)
+    Shortbread::PrivateBlobReadiness.ready?(root)
   end
 end

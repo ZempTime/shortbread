@@ -41,6 +41,23 @@ class ProductionProcessCommandTest < ActiveSupport::TestCase
     end
   end
 
+  test "inventory rejects AnyCable endpoint components that could disclose secrets" do
+    unsafe_endpoints = {
+      "ANYCABLE_RPC_HOST" => "http://operator:synthetic-rpc-secret@shortbread.internal:3000/_anycable",
+      "ANYCABLE_HTTP_BROADCAST_URL" => "http://cable:8090/_broadcast?token=synthetic-broadcast-secret",
+      "ANYCABLE_WEBSOCKET_URL" => "wss://shortbread.example/cable#synthetic-websocket-secret"
+    }
+
+    unsafe_endpoints.each do |key, endpoint|
+      stdout, stderr, status = run_production("config", VALID_ENVIRONMENT.merge(key => endpoint))
+
+      assert_empty stdout, key
+      assert_equal 78, status.exitstatus, key
+      refute_includes stderr, endpoint, key
+      refute_match(/(?:rpc|broadcast|websocket)-secret/, stderr, key)
+    end
+  end
+
   private
 
   def run_production(role, environment)

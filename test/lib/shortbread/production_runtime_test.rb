@@ -58,4 +58,34 @@ class ProductionRuntimeTest < ActiveSupport::TestCase
       override.each_value { |value| refute_includes error.message, value, name }
     end
   end
+
+  test "PostgreSQL URLs must select a database" do
+    [
+      "postgresql://shortbread:example@postgres",
+      "postgresql://shortbread:example@postgres/"
+    ].each do |database_url|
+      error = assert_raises(Shortbread::ProductionRuntime::InvalidConfiguration) do
+        Shortbread::ProductionRuntime.new(VALID_ENVIRONMENT.merge("DATABASE_URL" => database_url)).validate!
+      end
+
+      assert_includes error.message, "DATABASE_URL must be a PostgreSQL URL selecting a database"
+      refute_includes error.message, database_url
+    end
+  end
+
+  test "database separation canonicalizes PostgreSQL host and default port aliases" do
+    environment = VALID_ENVIRONMENT.merge(
+      "DATABASE_URL" => "postgresql://primary:secret@postgres/shortbread",
+      "QUEUE_DATABASE_URL" => "postgres://queue:other@POSTGRES:5432/shortbread"
+    )
+
+    error = assert_raises(Shortbread::ProductionRuntime::InvalidConfiguration) do
+      Shortbread::ProductionRuntime.new(environment).validate!
+    end
+
+    assert_includes error.message, "DATABASE_URL and QUEUE_DATABASE_URL must select distinct databases"
+    environment.values_at("DATABASE_URL", "QUEUE_DATABASE_URL").each do |database_url|
+      refute_includes error.message, database_url
+    end
+  end
 end

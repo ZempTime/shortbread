@@ -4,6 +4,7 @@
 require "bundler/setup"
 
 require_relative "../lib/shortbread/production_runtime"
+require_relative "../lib/shortbread/worker_health"
 
 begin
   runtime = Shortbread::ProductionRuntime.new
@@ -20,6 +21,7 @@ begin
   when "web"
     exec "bundle", "exec", "pitchfork", "-c", "config/pitchfork.rb"
   when "worker"
+    Shortbread::WorkerHealth.mark_started!
     exec File.expand_path("jobs", __dir__)
   when "cable"
     exec "anycable-go", "--ignore-config-path"
@@ -36,8 +38,7 @@ begin
       abort "web readiness failed" unless response.is_a?(Net::HTTPSuccess)
     when "worker"
       require_relative "../config/environment"
-      alive_since = SolidQueue.process_alive_threshold.ago
-      abort "worker health failed" unless SolidQueue::Process.where(kind: "Worker", last_heartbeat_at: alive_since..).exists?
+      abort "worker health failed" unless Shortbread::WorkerHealth.healthy?
     when "cable"
       require "net/http"
       port = Integer(ENV.fetch("ANYCABLE_PORT", 8080))

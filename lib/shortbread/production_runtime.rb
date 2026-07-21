@@ -37,12 +37,12 @@ module Shortbread
       invalid << "SHORTBREAD_BLOB_ROOT must be an absolute path" unless Pathname(@environment.fetch("SHORTBREAD_BLOB_ROOT")).absolute?
       invalid << "SECRET_KEY_BASE must contain at least 32 characters" unless valid_secret?("SECRET_KEY_BASE")
       invalid << "ANYCABLE_SECRET must contain at least 32 characters and must not use a development value" unless valid_anycable_secret?
-      invalid << "DATABASE_URL must be a PostgreSQL URL" unless valid_url?("DATABASE_URL", %w[postgres postgresql])
-      invalid << "QUEUE_DATABASE_URL must be a PostgreSQL URL" unless valid_url?("QUEUE_DATABASE_URL", %w[postgres postgresql])
+      invalid << "DATABASE_URL must be a PostgreSQL URL selecting a database" unless valid_postgresql_url?("DATABASE_URL")
+      invalid << "QUEUE_DATABASE_URL must be a PostgreSQL URL selecting a database" unless valid_postgresql_url?("QUEUE_DATABASE_URL")
       invalid << "DATABASE_URL and QUEUE_DATABASE_URL must select distinct databases" unless distinct_databases?
-      invalid << "ANYCABLE_RPC_HOST must be an HTTP URL" unless valid_url?("ANYCABLE_RPC_HOST", %w[http https])
-      invalid << "ANYCABLE_HTTP_BROADCAST_URL must be an HTTP URL" unless valid_url?("ANYCABLE_HTTP_BROADCAST_URL", %w[http https])
-      invalid << "ANYCABLE_WEBSOCKET_URL must be a secure WebSocket URL" unless valid_url?("ANYCABLE_WEBSOCKET_URL", %w[wss])
+      invalid << "ANYCABLE_RPC_HOST must be an HTTP URL without userinfo, query, or fragment" unless valid_endpoint_url?("ANYCABLE_RPC_HOST", %w[http https])
+      invalid << "ANYCABLE_HTTP_BROADCAST_URL must be an HTTP URL without userinfo, query, or fragment" unless valid_endpoint_url?("ANYCABLE_HTTP_BROADCAST_URL", %w[http https])
+      invalid << "ANYCABLE_WEBSOCKET_URL must be a secure WebSocket URL without userinfo, query, or fragment" unless valid_endpoint_url?("ANYCABLE_WEBSOCKET_URL", %w[wss])
 
       raise InvalidConfiguration, "invalid production configuration: #{invalid.join('; ')}" if invalid.any?
 
@@ -80,15 +80,23 @@ module Shortbread
       secret.bytesize >= 32 && !DEVELOPMENT_SECRETS.include?(secret)
     end
 
-    def valid_url?(key, schemes)
+    def valid_endpoint_url?(key, schemes)
       uri = URI.parse(@environment.fetch(key))
-      schemes.include?(uri.scheme) && uri.host && !uri.host.empty?
+      schemes.include?(uri.scheme) && uri.host && !uri.host.empty? && uri.userinfo.nil? && uri.query.nil? && uri.fragment.nil?
+    end
+
+    def valid_postgresql_url?(key)
+      uri = URI.parse(@environment.fetch(key))
+      %w[postgres postgresql].include?(uri.scheme) && uri.host && !uri.host.empty? && uri.path.to_s.match?(%r{\A/[^/]+\z})
     end
 
     def distinct_databases?
-      primary = URI.parse(@environment.fetch("DATABASE_URL"))
-      queue = URI.parse(@environment.fetch("QUEUE_DATABASE_URL"))
-      [ primary.host, primary.port, primary.path ] != [ queue.host, queue.port, queue.path ]
+      database_identity("DATABASE_URL") != database_identity("QUEUE_DATABASE_URL")
+    end
+
+    def database_identity(key)
+      uri = URI.parse(@environment.fetch(key))
+      [ uri.host.to_s.downcase, uri.port || 5432, uri.path ]
     end
   end
 end

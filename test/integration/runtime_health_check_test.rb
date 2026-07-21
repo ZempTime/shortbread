@@ -23,6 +23,7 @@ class RuntimeHealthCheckTest < ActionDispatch::IntegrationTest
           { "status" => "ready", "dependencies" => %w[database queue private_blob] },
           response.parsed_body
         )
+        assert_empty Dir.children(blob_root)
       end
     end
   end
@@ -35,6 +36,21 @@ class RuntimeHealthCheckTest < ActionDispatch::IntegrationTest
 
         assert_response :service_unavailable
         assert_equal({ "status" => "not_ready" }, response.parsed_body)
+      end
+    end
+  end
+
+  test "readiness fails closed and cleans up when private Blob hard-link creation fails" do
+    Dir.mktmpdir("shortbread-health") do |blob_root|
+      with_blob_root(blob_root) do
+        File.stub(:link, ->(*) { raise Errno::EPERM }) do
+          host! "localhost"
+          get "/health/ready"
+        end
+
+        assert_response :service_unavailable
+        assert_equal({ "status" => "not_ready" }, response.parsed_body)
+        assert_empty Dir.children(blob_root)
       end
     end
   end
