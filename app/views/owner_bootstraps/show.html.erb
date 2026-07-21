@@ -4,11 +4,107 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Register the Owner passkey · Shortbread</title>
+    <%= csrf_meta_tags %>
   </head>
   <body>
     <main>
       <h1>Register the Owner passkey</h1>
       <p>A deployment-authority ceremony is required before registration can begin.</p>
+
+      <form id="owner-bootstrap-form" method="post" action="/owner/bootstrap">
+        <p>
+          <label for="ceremony-secret">Ceremony secret</label>
+          <input id="ceremony-secret" name="ceremony_secret" type="password" autocomplete="off" required>
+        </p>
+        <p>
+          <label for="credential-label">Passkey label</label>
+          <input id="credential-label" name="credential_label" value="Primary passkey" maxlength="100" required>
+        </p>
+        <button type="submit">Register passkey</button>
+        <p id="owner-bootstrap-status" role="status" aria-live="polite"></p>
+      </form>
     </main>
+
+    <script>
+      (() => {
+        const form = document.querySelector("#owner-bootstrap-form")
+        form.dataset.enhanced = "true"
+        const secretInput = document.querySelector("#ceremony-secret")
+        const status = document.querySelector("#owner-bootstrap-status")
+        const button = form.querySelector("button[type='submit']")
+        const csrfToken = document.querySelector("meta[name='csrf-token']")?.content || ""
+
+        const decodeBase64url = (value) => {
+          const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=")
+          return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0))
+        }
+
+        const encodeBase64url = (value) => {
+          const bytes = new Uint8Array(value)
+          let binary = ""
+          bytes.forEach((byte) => { binary += String.fromCharCode(byte) })
+          return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")
+        }
+
+        const request = async (path, payload) => {
+          const response = await fetch(path, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "Accept": "application/json",
+              "Content-Type": "application/json",
+              "X-CSRF-Token": csrfToken
+            },
+            body: JSON.stringify(payload)
+          })
+          if (!response.ok) throw new Error("Owner registration rejected")
+          return response.json()
+        }
+
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault()
+          button.disabled = true
+          status.textContent = "Registering passkey…"
+          const ceremonySecret = secretInput.value
+
+          try {
+            const options = await request("/owner/bootstrap/options", {
+              ceremony_secret: ceremonySecret
+            })
+            const publicKey = options.public_key
+            publicKey.challenge = decodeBase64url(publicKey.challenge)
+            publicKey.user.id = decodeBase64url(publicKey.user.id)
+            publicKey.excludeCredentials = (publicKey.excludeCredentials || []).map((credential) => ({
+              ...credential,
+              id: decodeBase64url(credential.id)
+            }))
+
+            const credential = await navigator.credentials.create({ publicKey })
+            const registration = await request("/owner/bootstrap", {
+              ceremony_secret: ceremonySecret,
+              credential_label: document.querySelector("#credential-label").value,
+              public_key_credential: {
+                id: credential.id,
+                rawId: encodeBase64url(credential.rawId),
+                type: credential.type,
+                authenticatorAttachment: credential.authenticatorAttachment,
+                clientExtensionResults: credential.getClientExtensionResults(),
+                response: {
+                  attestationObject: encodeBase64url(credential.response.attestationObject),
+                  clientDataJSON: encodeBase64url(credential.response.clientDataJSON),
+                  transports: credential.response.getTransports ? credential.response.getTransports() : []
+                }
+              }
+            })
+            window.location.assign(registration.redirect)
+          } catch (_error) {
+            status.textContent = "Owner registration could not be completed. Mint a fresh ceremony and try again."
+            button.disabled = false
+          } finally {
+            secretInput.value = ""
+          }
+        })
+      })()
+    </script>
   </body>
 </html>

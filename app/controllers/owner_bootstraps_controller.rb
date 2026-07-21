@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class OwnerBootstrapsController < ApplicationController
+  layout false
+
   protect_from_forgery with: :exception
 
   rescue_from ActionController::InvalidAuthenticityToken, with: :not_found
@@ -38,6 +40,8 @@ class OwnerBootstrapsController < ApplicationController
       public_key_credential: public_key_credential,
       webauthn:
     )
+    reset_session
+    session[:owner_id] = registration.owner.id
     set_private_headers
     render json: {
       owner: { id: registration.owner.id },

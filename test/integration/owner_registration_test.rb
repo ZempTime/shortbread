@@ -285,6 +285,19 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
     assert_equal "Primary passkey", stored_credential.label
     assert_not_nil ceremony_model.find(ceremony.id).consumed_at
     assert_equal({ "owner" => { "id" => owner.id }, "redirect" => "/owner" }, response.parsed_body)
+    owner_cookie = Array(response.headers["Set-Cookie"]).join("\n")
+    assert_match(/(?:\A|\n)shortbread_apex=/, owner_cookie)
+    assert_includes owner_cookie, "path=/"
+    assert_includes owner_cookie.downcase, "httponly"
+
+    get "/owner", headers: { "Host" => "localhost" }
+
+    assert_response :ok
+    assert_equal "no-store", response.headers["Cache-Control"]
+    assert_includes response.body, "Owner landing"
+
+    get "/owner", headers: { "Host" => "first-site.sites.localhost" }
+    assert_response :not_found
 
     assert_no_difference -> { Owner.count } do
       post "/owner/bootstrap",

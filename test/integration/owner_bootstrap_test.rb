@@ -20,5 +20,8 @@ class OwnerBootstrapTest < ActionDispatch::IntegrationTest
     host! "localhost"
     get "/owner/bootstrap"
     assert_response :not_found
+
+    get "/owner"
+    assert_response :not_found
   end
 end
