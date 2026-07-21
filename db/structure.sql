@@ -158,6 +158,13 @@ BEGIN
           SELECT COUNT(DISTINCT expected->>'path')
           FROM jsonb_array_elements(plan.manifest->'entries') expected
         )
+        AND EXISTS (
+          SELECT 1
+          FROM jsonb_array_elements(plan.manifest->'entries') expected
+          WHERE expected->>'path' = 'index.html'
+            AND expected->>'content_type' = 'text/html'
+            AND expected->>'offline_policy' = 'required'
+        )
         AND NOT EXISTS (
           SELECT 1
           FROM jsonb_array_elements(plan.manifest->'entries') expected

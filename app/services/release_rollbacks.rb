@@ -31,7 +31,7 @@ module ReleaseRollbacks
         next Result.new(rollback: existing, created: false)
       end
 
-      target = locked_site.releases.where.not(finalized_at: nil).find_by(number: target_number)
+      target = locked_site.releases.published.find_by(number: target_number)
       raise ReleaseNotFound unless target
 
       current = locked_site.current_release

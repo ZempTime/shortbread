@@ -91,7 +91,7 @@ class ReleaseRollbacksTest < ActiveSupport::TestCase
     assemble_test_release!(
       site:, number:, manifest_sha256:, finalized_at:,
       entries: [ {
-        blob:, path: "release-#{number}.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
+        blob:, path: "index.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
       } ]
     )
   end

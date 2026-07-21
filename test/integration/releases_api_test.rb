@@ -120,6 +120,47 @@ class ReleasesApiTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "history and rollback fail closed for a Release whose Publish Plan ledger is still open" do
+    site = Site.create!(slug: "first-site", name: "First Site")
+    current = release_with_entries(site:, number: 1, digest_character: "a", sizes: [ 3 ])
+    site.update!(current_release: current)
+    blob = Blob.create!(sha256: "c" * 64, byte_size: 1, storage_key: "c" * 64)
+    entry = {
+      "path" => "index.html", "sha256" => blob.sha256, "size" => 1,
+      "content_type" => "text/html", "offline_policy" => "required"
+    }
+    plan = site.publish_plans.create!(
+      base_release: current,
+      idempotency_key_digest: "d" * 64,
+      manifest_sha256: "e" * 64,
+      manifest: { "entries" => [ entry ] },
+      state: "open",
+      expires_at: 1.hour.from_now
+    )
+    incomplete = site.releases.create!(number: 2, manifest_sha256: "e" * 64)
+    plan.update!(release: incomplete)
+    incomplete.manifest_entries.create!(
+      blob:, path: "index.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
+    )
+    incomplete.update!(finalized_at: Time.current)
+
+    with_bootstrap_token do |token|
+      host! "localhost"
+      get "/api/v1/sites/#{site.slug}/releases", headers: bearer_headers(token), as: :json
+
+      assert_response :ok
+      assert_equal [ 1 ], response.parsed_body.fetch("releases").pluck("number")
+
+      post "/api/v1/sites/#{site.slug}/releases/#{incomplete.number}/rollback",
+        headers: bearer_headers(token).merge("Idempotency-Key" => SecureRandom.urlsafe_base64(32, false)),
+        as: :json
+
+      assert_response :not_found
+      assert_equal({ "error" => { "code" => "release_not_found" } }, response.parsed_body)
+      assert_equal current, site.reload.current_release
+    end
+  end
+
   private
 
   def site_with_two_releases(slug)

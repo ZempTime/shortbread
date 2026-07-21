@@ -128,6 +128,47 @@ class ReleaseIntegrityTest < ActiveSupport::TestCase
     end
   end
 
+  test "PostgreSQL rejects finalization through empty or non-index Publish Plans" do
+    site = Site.create!(slug: "first-site", name: "First Site")
+    empty_plan = site.publish_plans.create!(
+      idempotency_key_digest: "a" * 64,
+      manifest_sha256: "b" * 64,
+      manifest: { "entries" => [] },
+      state: "open",
+      expires_at: 1.hour.from_now
+    )
+    empty_release = site.releases.create!(number: 1, manifest_sha256: "b" * 64)
+    empty_plan.update!(release: empty_release)
+
+    assert_database_rejects(ActiveRecord::StatementInvalid) do
+      empty_release.update!(finalized_at: Time.current)
+    end
+
+    blob = Blob.create!(sha256: "c" * 64, byte_size: 1, storage_key: "c" * 64)
+    non_index_entry = {
+      "path" => "foo.txt", "sha256" => blob.sha256, "size" => 1,
+      "content_type" => "text/plain", "offline_policy" => "download"
+    }
+    non_index_plan = site.publish_plans.create!(
+      idempotency_key_digest: "d" * 64,
+      manifest_sha256: "e" * 64,
+      manifest: { "entries" => [ non_index_entry ] },
+      state: "open",
+      expires_at: 1.hour.from_now
+    )
+    non_index_release = site.releases.create!(number: 2, manifest_sha256: "e" * 64)
+    non_index_plan.update!(release: non_index_release)
+    non_index_release.manifest_entries.create!(
+      blob:, path: "foo.txt", byte_size: 1, content_type: "text/plain", offline_policy: "download"
+    )
+
+    assert_database_rejects(ActiveRecord::StatementInvalid) do
+      non_index_release.update!(finalized_at: Time.current)
+    end
+
+    assert_nil site.reload.current_release_id
+  end
+
   test "PostgreSQL rejects exposing a finalized Release while its Publish Plan remains open" do
     site = Site.create!(slug: "first-site", name: "First Site")
     blob = Blob.create!(sha256: "a" * 64, byte_size: 1, storage_key: "a" * 64)
@@ -275,7 +316,7 @@ class ReleaseIntegrityTest < ActiveSupport::TestCase
     assemble_test_release!(
       site:, number:, manifest_sha256:, finalized_at:,
       entries: [ {
-        blob:, path: "release-#{number}.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
+        blob:, path: "index.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
       } ]
     )
   end
