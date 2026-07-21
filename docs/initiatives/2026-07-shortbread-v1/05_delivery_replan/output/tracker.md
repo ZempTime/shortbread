@@ -1,14 +1,14 @@
 # Stage 05 Delivery Tracker
 
-Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the executable leaves; original #3–#17 remain acceptance umbrellas. C00 completed on 2026-07-21 with U01/#19 and U02/#20 integrated. C01 controller `/root` claimed U03/#21 from `main@173f096` for worker `/root/u03_implementation` on branch `u03-production-runtime`; U04/#22 remains blocked by U03. U05/#23 is dependency-satisfied but remains campaign-gated for C02; every other leaf remains blocked by dependency or campaign order.
+Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the executable leaves; original #3–#17 remain acceptance umbrellas. C00 completed on 2026-07-21 with U01/#19 and U02/#20 integrated. C01 integrated U03/#21, then ended when the Operator selected the launch-today self-hosted path. U04/#22 was never started and is closed as not planned; its reference-provider acceptance was not delivered. U05/#23 through U38/#56 remain open, unassigned, and paused regardless of the historical dependency states shown below. No controller or frontier is active.
 
 | Unit | Acceptance umbrella | Blocked by units | GitHub | State |
 |---|---:|---|---|---|
 | U01 | #3 | #2 integrated | [#19](https://github.com/ZempTime/shortbread/issues/19) | Integrated by [#57](https://github.com/ZempTime/shortbread/pull/57) at `45db8bd`; reviewed candidate `21a08c9` |
 | U02 | #4 | U01 | [#20](https://github.com/ZempTime/shortbread/issues/20) | Integrated by [#59](https://github.com/ZempTime/shortbread/pull/59) at `181745c`; reviewed candidate `c523fac` |
-| U03 | #12 | U02 | [#21](https://github.com/ZempTime/shortbread/issues/21) | Review repairs pushed in draft [#61](https://github.com/ZempTime/shortbread/pull/61) at `379d001`; affected-axis rereview pending, C01 paused for launch-today reprioritization |
-| U04 | #13 | U03 | [#22](https://github.com/ZempTime/shortbread/issues/22) | Blocked |
-| U05 | #4 | U02 | [#23](https://github.com/ZempTime/shortbread/issues/23) | Dependency-satisfied; campaign-gated for C02 |
+| U03 | #12 | U02 | [#21](https://github.com/ZempTime/shortbread/issues/21) | Integrated by [#61](https://github.com/ZempTime/shortbread/pull/61) at `d30be56`; reviewed candidate `4b76c83` |
+| U04 | #13 | U03 | [#22](https://github.com/ZempTime/shortbread/issues/22) | Closed as not planned for the launch-today self-hosted path; not started and reference-provider acceptance not delivered |
+| U05 | #4 | U02 | [#23](https://github.com/ZempTime/shortbread/issues/23) | Paused and unclaimed; dependency-satisfied but campaign-gated for C02 |
 | U06 | #4 | U05 | [#24](https://github.com/ZempTime/shortbread/issues/24) | Blocked |
 | U07 | #4 | U06 | [#25](https://github.com/ZempTime/shortbread/issues/25) | Blocked |
 | U08 | #4 | U05, U07 | [#26](https://github.com/ZempTime/shortbread/issues/26) | Blocked |
@@ -59,6 +59,13 @@ Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the exec
 - Independent Standards + Spec and auth/security reviewers approved exact candidate `c523fac` with no blocker, should-fix, or note findings. The merge from main changed no auth, session, WebAuthn, schema, logging, test, manifest, lockfile, tool-pin, or `mise.toml` behavior from the previously approved U02 implementation.
 - [PR #59](https://github.com/ZempTime/shortbread/pull/59) merged as `181745c`; [U02/#20](https://github.com/ZempTime/shortbread/issues/20) closed. Umbrella [#4](https://github.com/ZempTime/shortbread/issues/4) remains open for U05–U08. **No reusable harvest:** the project-specific governed-digest repair is durable in PR #60; the proposed `agent:security` wrapper lacks repeated evidence and is not promoted into `agents/` during C00.
 
+## U03 Integration Evidence
+
+- Exact candidate `4b76c83` passed test-first repair and the full relevant gates; independent Standards + Spec and operations/container/security reviewers approved it with no remaining findings. The [final fixed-head PR record](https://github.com/ZempTime/shortbread/pull/61#issuecomment-5037707914) owns the detailed evidence and residual risks.
+- [PR #61](https://github.com/ZempTime/shortbread/pull/61) merged as `d30be56`; [U03/#21](https://github.com/ZempTime/shortbread/issues/21) closed. The U03 worktree and branches were removed only after integration and clean-state proof.
+- U04/#22 closed as not planned without implementation when the Operator chose the launch-today self-hosted path. Its reference-provider acceptance remains undelivered; the later v1 backlog remains open and paused.
+- **No reusable harvest:** retain the production smoke and fail-fast/redacted runtime pattern as a U28 candidate only. Promote nothing into `agents/` until the final image proves the pattern with its authoritative rebuild, digest, SBOM, vulnerability scan, and operations review.
+
 ## Promotion Rule
 
-Only the current campaign controller changes frontier state. After a leaf is reviewed and integrated, it records evidence here and on the issue, removes `ready-for-agent` from the completed leaf, then promotes only dependency-satisfied leaves that fit the active campaign. A pause or campaign end must leave the repository with no falsely active state and one exact fresh-context resume instruction in `RUN.md`.
+Only a current campaign controller changes frontier state. No controller is active and no leaf is promoted. Future execution requires explicit Operator direction, fresh reconciliation, and a new bounded campaign; the current `RUN.md` pause capsule is authoritative.
