@@ -16,6 +16,15 @@ class RequestLoggingFilterTest < ActiveSupport::TestCase
       manifest
       idempotency_key
       locator
+      challenge
+      device_code
+      proof_verifier
+      recovery
+      ceremony_secret
+      bootstrap_ceremony
+      owner_bootstrap_secret
+      public_key_credential
+      credential_label
     ].index_with { |name| "synthetic-#{name}" }
 
     filtered = ActiveSupport::ParameterFilter

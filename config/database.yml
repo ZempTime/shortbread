@@ -16,7 +16,7 @@ development:
 
 test:
   <<: *default
-  database: shortbread_test
+  database: <%= ENV.fetch("SHORTBREAD_TEST_DATABASE_NAME", "shortbread_test") %>
 
 production:
   primary:

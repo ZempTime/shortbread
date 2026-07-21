@@ -1,4 +1,9 @@
 Rails.application.routes.draw do
+  get "owner/bootstrap", to: "owner_bootstraps#show"
+  post "owner/bootstrap/options", to: "owner_bootstraps#options"
+  post "owner/bootstrap", to: "owner_bootstraps#create"
+  get "owner", to: "owner_landings#show"
+
   get "invitations/:locator", to: "invitation_previews#show"
   post "invitations/:locator/accept", to: "invitation_acceptances#create"
   post "_shortbread/session", to: "site_sessions#create"
