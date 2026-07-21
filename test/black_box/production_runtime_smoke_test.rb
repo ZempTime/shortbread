@@ -22,6 +22,7 @@ class ProductionRuntimeSmokeTest < ActiveSupport::TestCase
       stderr:
       #{stderr}
     MESSAGE
+    assert_includes stdout, "HTTPS proxy/API Site creation: green"
     assert_includes stdout, "production runtime smoke: green"
   end
 end
