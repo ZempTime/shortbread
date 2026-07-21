@@ -17,6 +17,8 @@ The dependency baseline is audited and frozen. The first vertical product tracer
 
 The v1 build includes the web app, remote-authenticating Go CLI, credential-driven reference deployment, clean-clone setup/operations guides, released artifacts, a synthetic example Site, and screenshots captured repeatably from the real app.
 
+The current credential-free, production-shaped container rehearsal is documented in [`OPERATIONS.md`](OPERATIONS.md).
+
 ## Development bootstrap
 
 After cloning, explicitly trust this repository's checked-in mise configuration, then run the system-shell bootstrap seam:

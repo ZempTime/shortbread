@@ -1,0 +1,167 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repository_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+cd "$repository_root"
+
+smoke_root=$(mktemp -d "${TMPDIR:-/tmp}/shortbread-production-smoke.XXXXXX")
+environment_file="$smoke_root/runtime.env"
+project_name="shortbread-u03-smoke"
+revision=$(git rev-parse HEAD)
+image="shortbread:u03-${revision:0:12}"
+postgres_password="synthetic-local-postgres-password"
+secret_key_base="synthetic-local-secret-key-base-0123456789abcdef0123456789abcdef"
+anycable_secret="synthetic-local-anycable-secret-0123456789abcdef0123456789abcdef"
+
+umask 077
+printf '%s\n' \
+  "COMPOSE_PROJECT_NAME=$project_name" \
+  "SHORTBREAD_IMAGE=$image" \
+  "SHORTBREAD_APEX_HOST=shortbread.localhost" \
+  "SHORTBREAD_POSTGRES_PASSWORD=$postgres_password" \
+  "DATABASE_URL=postgresql://shortbread:$postgres_password@postgres:5432/shortbread_production" \
+  "QUEUE_DATABASE_URL=postgresql://shortbread:$postgres_password@postgres:5432/shortbread_production_queue" \
+  "RAILS_ENV=production" \
+  "SECRET_KEY_BASE=$secret_key_base" \
+  "SHORTBREAD_BLOB_ROOT=/var/lib/shortbread/blobs" \
+  "ANYCABLE_SECRET=$anycable_secret" \
+  "ANYCABLE_RPC_HOST=http://shortbread.localhost:3000/_anycable" \
+  "ANYCABLE_HTTP_BROADCAST_URL=http://cable:8090/_broadcast" \
+  "ANYCABLE_WEBSOCKET_URL=wss://shortbread.localhost/cable" \
+  "SHORTBREAD_WEB_PORT=${SHORTBREAD_WEB_PORT:-13000}" \
+  "SHORTBREAD_CABLE_PORT=${SHORTBREAD_CABLE_PORT:-18080}" >"$environment_file"
+
+compose=(docker compose --project-name "$project_name" --env-file "$environment_file" --file compose.production.yml)
+
+cleanup() {
+  if [[ "${SHORTBREAD_KEEP_PRODUCTION_SMOKE:-0}" == "1" ]]; then
+    echo "production runtime smoke retained: $project_name"
+  else
+    "${compose[@]}" down --volumes --remove-orphans >/dev/null 2>&1 || true
+  fi
+  rm -rf "$smoke_root"
+}
+trap cleanup EXIT
+
+"${compose[@]}" config --quiet
+
+echo "building candidate image $image"
+docker build --pull --tag "$image" --build-arg "VCS_REF=$revision" .
+
+image_user=$(docker image inspect --format '{{.Config.User}}' "$image")
+if [[ "$image_user" != "10001:10001" ]]; then
+  echo "candidate image user is $image_user, expected 10001:10001" >&2
+  exit 1
+fi
+echo "non-root image user: $image_user"
+
+set +e
+missing_output=$(docker run --rm "$image" web 2>&1)
+missing_status=$?
+set -e
+if [[ "$missing_status" != "78" || "$missing_output" != *"missing production configuration"* ]]; then
+  echo "missing configuration did not fail before serving" >&2
+  echo "$missing_output" >&2
+  exit 1
+fi
+
+set +e
+contradictory_output=$(docker run --rm --env-file "$environment_file" \
+  --env "QUEUE_DATABASE_URL=postgresql://shortbread:$postgres_password@postgres:5432/shortbread_production" \
+  "$image" web 2>&1)
+contradictory_status=$?
+set -e
+if [[ "$contradictory_status" != "78" || "$contradictory_output" != *"distinct databases"* ]]; then
+  echo "contradictory configuration did not fail before serving" >&2
+  echo "$contradictory_output" >&2
+  exit 1
+fi
+if [[ "$contradictory_output" == *"$postgres_password"* ]]; then
+  echo "configuration failure exposed a configured secret" >&2
+  exit 1
+fi
+echo "fail-fast configuration: green"
+
+echo "candidate dependency inventory"
+docker run --rm --entrypoint ruby "$image" --version
+docker run --rm --entrypoint anycable-go "$image" --version
+docker run --rm --entrypoint bundle "$image" list
+
+if ! "${compose[@]}" up --detach; then
+  "${compose[@]}" ps --all
+  "${compose[@]}" logs --no-color migrate web worker cable
+  echo "production process startup failed" >&2
+  exit 1
+fi
+
+deadline=$((SECONDS + 60))
+while true; do
+  all_healthy=true
+  for service in web worker cable; do
+    container_id=$("${compose[@]}" ps --quiet "$service")
+    if [[ -z "$container_id" ]]; then
+      all_healthy=false
+      continue
+    fi
+    state=$(docker inspect --format '{{.State.Status}}' "$container_id")
+    health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container_id")
+    if [[ "$state" != "running" || "$health" != "healthy" ]]; then
+      all_healthy=false
+    fi
+  done
+  [[ "$all_healthy" == "true" ]] && break
+  if (( SECONDS >= deadline )); then
+    "${compose[@]}" ps --all
+    for service in web worker cable; do
+      container_id=$("${compose[@]}" ps --quiet "$service")
+      if [[ -n "$container_id" ]]; then
+        echo "$service health history"
+        docker inspect --format '{{json .State.Health}}' "$container_id"
+      fi
+    done
+    "${compose[@]}" logs --no-color migrate web worker cable
+    echo "production processes did not become healthy" >&2
+    exit 1
+  fi
+  sleep 2
+done
+
+migrate_id=$("${compose[@]}" ps --all --quiet migrate)
+migrate_exit=$(docker inspect --format '{{.State.ExitCode}}' "$migrate_id")
+migrate_finished=$(docker inspect --format '{{.State.FinishedAt}}' "$migrate_id")
+web_id=$("${compose[@]}" ps --quiet web)
+web_started=$(docker inspect --format '{{.State.StartedAt}}' "$web_id")
+if [[ "$migrate_exit" != "0" || "$migrate_finished" > "$web_started" ]]; then
+  echo "web started before a successful migration" >&2
+  exit 1
+fi
+
+"${compose[@]}" exec --no-TTY web bin/production health web
+"${compose[@]}" exec --no-TTY worker bin/production health worker
+"${compose[@]}" exec --no-TTY cable bin/production health cable
+"${compose[@]}" exec --no-TTY web bin/rails runner \
+  'abort "primary migrations missing" if ActiveRecord::Base.connection_pool.migration_context.get_all_versions.empty?; abort "queue schema missing" unless SolidQueue::Process.table_exists?; puts "migration ordering: green"'
+"${compose[@]}" exec --no-TTY web bin/production config
+
+"${compose[@]}" restart worker cable
+deadline=$((SECONDS + 120))
+while true; do
+  restarted_healthy=true
+  for service in worker cable; do
+    container_id=$("${compose[@]}" ps --quiet "$service")
+    health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container_id")
+    [[ "$health" == "healthy" ]] || restarted_healthy=false
+  done
+  [[ "$restarted_healthy" == "true" ]] && break
+  if (( SECONDS >= deadline )); then
+    "${compose[@]}" ps --all
+    "${compose[@]}" logs --no-color worker cable
+    echo "production processes did not recover after restart" >&2
+    exit 1
+  fi
+  sleep 2
+done
+
+"${compose[@]}" ps --all
+echo "process restart recovery: green"
+echo "production runtime smoke: green"
