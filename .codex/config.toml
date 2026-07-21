@@ -1,0 +1,12 @@
+# Trusted-project defaults for bounded autonomous campaigns.
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"
+sandbox_mode = "workspace-write"
+
+[sandbox_workspace_write]
+network_access = false
+exclude_tmpdir_env_var = false
+exclude_slash_tmp = false
+
+[shell_environment_policy]
+set = { MISE_CACHE_DIR = "/private/tmp/shortbread-mise-cache" }

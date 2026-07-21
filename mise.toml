@@ -104,3 +104,31 @@ run = "bin/verify-bootstrap"
 [tasks.walking-skeleton]
 description = "Run the phase-2 publish/invite/view tracer (currently pending)"
 run = "bin/walking-skeleton"
+
+[tasks."agent:db:start"]
+description = "Start worktree-isolated PostgreSQL for autonomous verification"
+run = "bin/agent-env -- bin/db start"
+
+[tasks."agent:db:stop"]
+description = "Stop worktree-isolated PostgreSQL after autonomous verification"
+run = "bin/agent-env -- bin/db stop"
+
+[tasks."agent:database"]
+description = "Start worktree-isolated PostgreSQL and prepare application databases"
+run = "bin/agent-env -- bin/db prepare"
+
+[tasks."agent:rails"]
+description = "Run a Rails test-environment command with worktree-isolated state"
+run = "bin/agent-env --rails-env test -- bin/rails"
+
+[tasks."agent:test"]
+description = "Run Rails and Go tests with worktree-isolated database and caches"
+run = "bin/agent-env -- mise run test"
+
+[tasks."agent:bootstrap-check"]
+description = "Run the bootstrap gate with worktree-isolated database and caches"
+run = "bin/agent-env -- mise run bootstrap-check"
+
+[tasks."agent:walking-skeleton"]
+description = "Run the real tracer with worktree-isolated database and caches"
+run = "bin/agent-env -- mise run walking-skeleton"
