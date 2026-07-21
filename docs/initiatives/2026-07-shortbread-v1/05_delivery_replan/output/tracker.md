@@ -1,14 +1,14 @@
 # Stage 05 Delivery Tracker
 
-Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the executable leaves; original #3–#17 remain acceptance umbrellas. U01/#19 is integrated and U02/#20 is the sole frontier. Every other leaf stays blocked until all unit dependencies are integrated and the current controller promotes it.
+Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the executable leaves; original #3–#17 remain acceptance umbrellas. C00 completed on 2026-07-21 with U01/#19 and U02/#20 integrated. U03/#21 is the sole promoted C01 frontier. U05/#23 is dependency-satisfied but remains campaign-gated for C02; every other leaf remains blocked by dependency or campaign order.
 
 | Unit | Acceptance umbrella | Blocked by units | GitHub | State |
 |---|---:|---|---|---|
 | U01 | #3 | #2 integrated | [#19](https://github.com/ZempTime/shortbread/issues/19) | Integrated by [#57](https://github.com/ZempTime/shortbread/pull/57) at `45db8bd`; reviewed candidate `21a08c9` |
-| U02 | #4 | U01 | [#20](https://github.com/ZempTime/shortbread/issues/20) | `ready-for-agent` frontier |
-| U03 | #12 | U02 | [#21](https://github.com/ZempTime/shortbread/issues/21) | Blocked |
+| U02 | #4 | U01 | [#20](https://github.com/ZempTime/shortbread/issues/20) | Integrated by [#59](https://github.com/ZempTime/shortbread/pull/59) at `181745c`; reviewed candidate `c523fac` |
+| U03 | #12 | U02 | [#21](https://github.com/ZempTime/shortbread/issues/21) | `ready-for-agent` frontier for C01 |
 | U04 | #13 | U03 | [#22](https://github.com/ZempTime/shortbread/issues/22) | Blocked |
-| U05 | #4 | U02 | [#23](https://github.com/ZempTime/shortbread/issues/23) | Blocked |
+| U05 | #4 | U02 | [#23](https://github.com/ZempTime/shortbread/issues/23) | Dependency-satisfied; campaign-gated for C02 |
 | U06 | #4 | U05 | [#24](https://github.com/ZempTime/shortbread/issues/24) | Blocked |
 | U07 | #4 | U06 | [#25](https://github.com/ZempTime/shortbread/issues/25) | Blocked |
 | U08 | #4 | U05, U07 | [#26](https://github.com/ZempTime/shortbread/issues/26) | Blocked |
@@ -50,6 +50,14 @@ Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the exec
 - A detached clean checkout rebuilt its database from migrations and replayed the full tests, tracer, and bootstrap successfully.
 - Independent Standards + Spec and data-integrity specialist reviews both approved exact candidate `21a08c9` with no blockers or should-fix findings.
 - [PR #57](https://github.com/ZempTime/shortbread/pull/57) merged as `45db8bd`; [U01/#19](https://github.com/ZempTime/shortbread/issues/19) closed. No reusable harvest.
+
+## U02 Integration Evidence
+
+- Merged PR #58 changed only authorized `agent:*` execution/isolation tasks but left the frozen `mise.toml` digest stale. Controller-owned [PR #60](https://github.com/ZempTime/shortbread/pull/60) updated only that digest after confirming no dependency, lockfile, tool version, installer pin, telemetry control, or trust-promise change.
+- Exact PR #60 candidate `cd98357` passed the complete security gate, standalone license audit, and isolated bootstrap gate. Independent Standards + Spec and security/supply-chain reviewers approved it with no findings; it merged as `1a65ae3`.
+- Current main was merged normally into `u02-owner-bootstrap` without rewriting history. Exact U02 candidate `c523fac` passed 149 Rails tests / 1,507 assertions plus all Go tests, Rails `test:all` at 151 / 1,523 including Chrome, focused auth at 21 / 190, dedicated Chrome WebAuthn at 2 / 16, lint, typecheck, build, security/dependency/license checks, bootstrap, and the real walking-skeleton tracer.
+- Independent Standards + Spec and auth/security reviewers approved exact candidate `c523fac` with no blocker, should-fix, or note findings. The merge from main changed no auth, session, WebAuthn, schema, logging, test, manifest, lockfile, tool-pin, or `mise.toml` behavior from the previously approved U02 implementation.
+- [PR #59](https://github.com/ZempTime/shortbread/pull/59) merged as `181745c`; [U02/#20](https://github.com/ZempTime/shortbread/issues/20) closed. Umbrella [#4](https://github.com/ZempTime/shortbread/issues/4) remains open for U05–U08. **No reusable harvest:** the project-specific governed-digest repair is durable in PR #60; the proposed `agent:security` wrapper lacks repeated evidence and is not promoted into `agents/` during C00.
 
 ## Promotion Rule
 
