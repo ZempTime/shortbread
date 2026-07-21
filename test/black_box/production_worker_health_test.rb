@@ -19,7 +19,8 @@ class ProductionWorkerHealthTest < ActiveSupport::TestCase
     "RAILS_ENV" => "production",
     "SECRET_KEY_BASE" => "b" * 64,
     "SHORTBREAD_APEX_HOST" => "shortbread.example",
-    "SHORTBREAD_BLOB_ROOT" => "/var/lib/shortbread/blobs"
+    "SHORTBREAD_BLOB_ROOT" => "/var/lib/shortbread/blobs",
+    "SHORTBREAD_BOOTSTRAP_TOKEN" => "c" * 64
   }.freeze
 
   teardown do

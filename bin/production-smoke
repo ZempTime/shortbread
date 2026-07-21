@@ -6,21 +6,27 @@ cd "$repository_root"
 
 smoke_root=$(mktemp -d "${TMPDIR:-/tmp}/shortbread-production-smoke.XXXXXX")
 environment_file="$smoke_root/runtime.env"
+contradictory_environment_file="$smoke_root/contradictory-runtime.env"
 project_name="shortbread-u03-smoke"
 revision=$(git rev-parse HEAD)
 image="shortbread:u03-${revision:0:12}"
-postgres_password="synthetic-local-postgres-password"
-secret_key_base="synthetic-local-secret-key-base-0123456789abcdef0123456789abcdef"
-anycable_secret="synthetic-local-anycable-secret-0123456789abcdef0123456789abcdef"
 
 umask 077
+chmod 0700 "$smoke_root"
+postgres_password=$(openssl rand -hex 32)
+secret_key_base=$(openssl rand -hex 32)
+anycable_secret=$(openssl rand -hex 32)
+bootstrap_token=$(openssl rand -hex 32)
+primary_database_url="postgresql://shortbread:$postgres_password@postgres:5432/shortbread_production"
+queue_database_url="postgresql://shortbread:$postgres_password@postgres:5432/shortbread_production_queue"
 printf '%s\n' \
   "COMPOSE_PROJECT_NAME=$project_name" \
   "SHORTBREAD_IMAGE=$image" \
   "SHORTBREAD_APEX_HOST=shortbread.localhost" \
+  "SHORTBREAD_BOOTSTRAP_TOKEN=$bootstrap_token" \
   "SHORTBREAD_POSTGRES_PASSWORD=$postgres_password" \
-  "DATABASE_URL=postgresql://shortbread:$postgres_password@postgres:5432/shortbread_production" \
-  "QUEUE_DATABASE_URL=postgresql://shortbread:$postgres_password@postgres:5432/shortbread_production_queue" \
+  "DATABASE_URL=$primary_database_url" \
+  "QUEUE_DATABASE_URL=$queue_database_url" \
   "RAILS_ENV=production" \
   "SECRET_KEY_BASE=$secret_key_base" \
   "SHORTBREAD_BLOB_ROOT=/var/lib/shortbread/blobs" \
@@ -30,6 +36,8 @@ printf '%s\n' \
   "ANYCABLE_WEBSOCKET_URL=wss://shortbread.localhost/cable" \
   "SHORTBREAD_WEB_PORT=${SHORTBREAD_WEB_PORT:-13000}" \
   "SHORTBREAD_CABLE_PORT=${SHORTBREAD_CABLE_PORT:-18080}" >"$environment_file"
+cp "$environment_file" "$contradictory_environment_file"
+printf '%s\n' "QUEUE_DATABASE_URL=$primary_database_url" >>"$contradictory_environment_file"
 
 compose=(docker compose --project-name "$project_name" --env-file "$environment_file" --file compose.production.yml)
 
@@ -66,8 +74,7 @@ if [[ "$missing_status" != "78" || "$missing_output" != *"missing production con
 fi
 
 set +e
-contradictory_output=$(docker run --rm --env-file "$environment_file" \
-  --env "QUEUE_DATABASE_URL=postgresql://shortbread:$postgres_password@postgres:5432/shortbread_production" \
+contradictory_output=$(docker run --rm --env-file "$contradictory_environment_file" \
   "$image" web 2>&1)
 contradictory_status=$?
 set -e
@@ -76,7 +83,7 @@ if [[ "$contradictory_status" != "78" || "$contradictory_output" != *"distinct d
   echo "$contradictory_output" >&2
   exit 1
 fi
-if [[ "$contradictory_output" == *"$postgres_password"* ]]; then
+if [[ "$contradictory_output" == *"$postgres_password"* || "$contradictory_output" == *"$bootstrap_token"* ]]; then
   echo "configuration failure exposed a configured secret" >&2
   exit 1
 fi
@@ -141,7 +148,12 @@ fi
 "${compose[@]}" exec --no-TTY cable bin/production health cable
 "${compose[@]}" exec --no-TTY web bin/rails runner \
   'abort "primary migrations missing" if ActiveRecord::Base.connection_pool.migration_context.get_all_versions.empty?; abort "queue schema missing" unless SolidQueue::Process.table_exists?; puts "migration ordering: green"'
-"${compose[@]}" exec --no-TTY web bin/production config
+inventory_output=$("${compose[@]}" exec --no-TTY web bin/production config)
+if [[ "$inventory_output" == *"$bootstrap_token"* || "$inventory_output" == *"$postgres_password"* ]]; then
+  echo "configuration inventory exposed a configured secret" >&2
+  exit 1
+fi
+printf '%s\n' "$inventory_output"
 
 "${compose[@]}" restart worker cable
 deadline=$((SECONDS + 120))

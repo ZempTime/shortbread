@@ -15,7 +15,8 @@ class ProductionRuntimeTest < ActiveSupport::TestCase
     "RAILS_ENV" => "production",
     "SECRET_KEY_BASE" => "b" * 64,
     "SHORTBREAD_APEX_HOST" => "shortbread.example",
-    "SHORTBREAD_BLOB_ROOT" => "/var/lib/shortbread/blobs"
+    "SHORTBREAD_BLOB_ROOT" => "/var/lib/shortbread/blobs",
+    "SHORTBREAD_BOOTSTRAP_TOKEN" => "c" * 64
   }.freeze
 
   test "valid production configuration has one redacted exact inventory" do
@@ -42,15 +43,13 @@ class ProductionRuntimeTest < ActiveSupport::TestCase
 
   test "the Producer bootstrap credential is required and redacted" do
     error = assert_raises(Shortbread::ProductionRuntime::InvalidConfiguration) do
-      Shortbread::ProductionRuntime.new(VALID_ENVIRONMENT).validate!
+      Shortbread::ProductionRuntime.new(VALID_ENVIRONMENT.except("SHORTBREAD_BOOTSTRAP_TOKEN")).validate!
     end
 
     assert_equal "missing production configuration: SHORTBREAD_BOOTSTRAP_TOKEN", error.message
 
-    credential = "synthetic-runtime-bootstrap-credential-0123456789abcdef"
-    runtime = Shortbread::ProductionRuntime.new(
-      VALID_ENVIRONMENT.merge("SHORTBREAD_BOOTSTRAP_TOKEN" => credential)
-    )
+    credential = VALID_ENVIRONMENT.fetch("SHORTBREAD_BOOTSTRAP_TOKEN")
+    runtime = Shortbread::ProductionRuntime.new(VALID_ENVIRONMENT)
 
     assert runtime.validate!
     assert_equal "[configured secret]", runtime.inventory.fetch("SHORTBREAD_BOOTSTRAP_TOKEN")
@@ -61,6 +60,7 @@ class ProductionRuntimeTest < ActiveSupport::TestCase
     contradictions = {
       "same primary and queue database" => { "QUEUE_DATABASE_URL" => VALID_ENVIRONMENT.fetch("DATABASE_URL") },
       "development AnyCable secret" => { "ANYCABLE_SECRET" => "shortbread-development-only" },
+      "short Producer bootstrap credential" => { "SHORTBREAD_BOOTSTRAP_TOKEN" => "too-short" },
       "relative Blob root" => { "SHORTBREAD_BLOB_ROOT" => "tmp/blobs" },
       "apex URL instead of host" => { "SHORTBREAD_APEX_HOST" => "https://shortbread.example" },
       "plain production WebSocket" => { "ANYCABLE_WEBSOCKET_URL" => "ws://shortbread.example/cable" }

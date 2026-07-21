@@ -16,8 +16,15 @@ module Shortbread
       SECRET_KEY_BASE
       SHORTBREAD_APEX_HOST
       SHORTBREAD_BLOB_ROOT
+      SHORTBREAD_BOOTSTRAP_TOKEN
     ].freeze
-    SECRET_KEYS = %w[ANYCABLE_SECRET DATABASE_URL QUEUE_DATABASE_URL SECRET_KEY_BASE].freeze
+    SECRET_KEYS = %w[
+      ANYCABLE_SECRET
+      DATABASE_URL
+      QUEUE_DATABASE_URL
+      SECRET_KEY_BASE
+      SHORTBREAD_BOOTSTRAP_TOKEN
+    ].freeze
     DEVELOPMENT_SECRETS = %w[anycable-local-secret shortbread-development-only].freeze
     POSTGRESQL_EXTERNAL_IDENTITY_QUERY_KEYS = %w[dbname service].freeze
     HOST_PATTERN = /\A(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\z/
@@ -37,6 +44,7 @@ module Shortbread
       invalid << "SHORTBREAD_APEX_HOST must be a lowercase hostname without scheme or port" unless valid_host?
       invalid << "SHORTBREAD_BLOB_ROOT must be an absolute path" unless Pathname(@environment.fetch("SHORTBREAD_BLOB_ROOT")).absolute?
       invalid << "SECRET_KEY_BASE must contain at least 32 characters" unless valid_secret?("SECRET_KEY_BASE")
+      invalid << "SHORTBREAD_BOOTSTRAP_TOKEN must contain at least 32 visible characters" unless valid_bootstrap_token?
       invalid << "ANYCABLE_SECRET must contain at least 32 characters and must not use a development value" unless valid_anycable_secret?
       invalid << "DATABASE_URL must be a PostgreSQL URL selecting a database" unless valid_postgresql_url?("DATABASE_URL")
       invalid << "QUEUE_DATABASE_URL must be a PostgreSQL URL selecting a database" unless valid_postgresql_url?("QUEUE_DATABASE_URL")
@@ -79,6 +87,10 @@ module Shortbread
     def valid_anycable_secret?
       secret = @environment.fetch("ANYCABLE_SECRET")
       secret.bytesize >= 32 && !DEVELOPMENT_SECRETS.include?(secret)
+    end
+
+    def valid_bootstrap_token?
+      @environment.fetch("SHORTBREAD_BOOTSTRAP_TOKEN").match?(/\A[!-~]{32,}\z/)
     end
 
     def valid_endpoint_url?(key, schemes)
