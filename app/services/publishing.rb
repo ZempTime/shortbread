@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "digest"
-require "json"
 
 module Publishing
   PLAN_LIFETIME = 24.hours
@@ -14,6 +13,7 @@ module Publishing
   class PublishIncomplete < StandardError; end
   class PublishPlanExpired < StandardError; end
   class StalePublishPlan < StandardError; end
+  class InconsistentPublishPlan < StandardError; end
 
   module_function
 
@@ -21,9 +21,9 @@ module Publishing
     key = idempotency_key.to_s
     raise IdempotencyKeyRequired if key.empty? || key.bytesize > 512 || key.match?(/[\r\n]/)
 
-    normalized_manifest = normalize_manifest(manifest)
-    canonical = JSON.generate(normalized_manifest)
-    manifest_sha256 = Digest::SHA256.hexdigest(canonical)
+    candidate_manifest = Manifest.build(entries: manifest.to_h.stringify_keys.fetch("entries", nil))
+    normalized_manifest = { "entries" => candidate_manifest.entries }
+    manifest_sha256 = candidate_manifest.sha256
     key_digest = Digest::SHA256.hexdigest(key)
 
     site.with_lock do
@@ -47,29 +47,32 @@ module Publishing
   end
 
   def finalize(publish_plan:, blob_store:, now: Time.current)
-    publish_plan.reload
-    return FinalizeResult.new(release: publish_plan.release, created: false) if publish_plan.release_id
-
-    raise PublishPlanExpired unless publish_plan.open? && publish_plan.expires_at > now
-
-    entries = publish_plan.manifest.fetch("entries")
-    blobs = preflight_blobs(entries:, blob_store:)
-
     PublishPlan.transaction do
       publish_plan.lock!
       if publish_plan.release_id
-        FinalizeResult.new(release: publish_plan.release, created: false)
+        release = publish_plan.release
+        consistent = publish_plan.state == "finalized" && release.finalized_at.present? &&
+          release.site_id == publish_plan.site_id && release.manifest_sha256 == publish_plan.manifest_sha256
+        raise InconsistentPublishPlan unless consistent
+
+        FinalizeResult.new(release:, created: false)
       else
         raise PublishPlanExpired unless publish_plan.open? && publish_plan.expires_at > now
+
+        entries = publish_plan.manifest.fetch("entries")
+        manifest = Manifest.build(entries:)
+        raise InvalidManifest unless manifest.sha256 == publish_plan.manifest_sha256
+
+        blobs = preflight_blobs(entries:, blob_store:)
 
         site = Site.lock.find(publish_plan.site_id)
         raise StalePublishPlan unless site.current_release_id == publish_plan.base_release_id
 
         release = site.releases.create!(
           number: site.releases.maximum(:number).to_i + 1,
-          manifest_sha256: publish_plan.manifest_sha256,
-          finalized_at: now
+          manifest_sha256: publish_plan.manifest_sha256
         )
+        publish_plan.update!(release:)
         entries.each do |entry|
           ManifestEntry.create!(
             release:,
@@ -80,8 +83,9 @@ module Publishing
             offline_policy: entry.fetch("offline_policy")
           )
         end
+        release.update!(finalized_at: now)
+        publish_plan.update!(state: "finalized", finalized_at: now)
         site.update!(current_release: release)
-        publish_plan.update!(release:, state: "finalized", finalized_at: now)
         FinalizeResult.new(release:, created: true)
       end
     end
@@ -106,6 +110,11 @@ module Publishing
     { "entries" => normalized.sort_by { |entry| entry.fetch("path") } }
   rescue KeyError, NoMethodError, TypeError
     raise InvalidManifest
+  end
+
+  def delta_for(publish_plan)
+    candidate = Manifest.build(entries: publish_plan.manifest.fetch("entries"))
+    candidate.delta_from(Manifest.from_release(publish_plan.base_release))
   end
 
   def preflight_blobs(entries:, blob_store:)

@@ -74,8 +74,16 @@ type PublishUpload struct {
 type PublishPlan struct {
 	ID          int64           `json:"id"`
 	State       string          `json:"state"`
+	Delta       PublishDelta    `json:"delta"`
 	Uploads     []PublishUpload `json:"uploads"`
 	FinalizeURL string          `json:"finalize_url"`
+}
+
+type PublishDelta struct {
+	Added   int `json:"added"`
+	Changed int `json:"changed"`
+	Reused  int `json:"reused"`
+	Removed int `json:"removed"`
 }
 
 type Release struct {
@@ -255,7 +263,11 @@ func (client *Client) resolveUploadURL(raw string) (*url.URL, bool, error) {
 }
 
 func (client *Client) validPublishPlan(plan PublishPlan, entries []ManifestEntry) bool {
-	if plan.ID <= 0 || plan.State != "open" || plan.FinalizeURL != "/api/v1/publish-plans/"+strconv.FormatInt(plan.ID, 10)+"/finalize" {
+	if plan.ID <= 0 || plan.State != "open" && plan.State != "finalized" || plan.FinalizeURL != "/api/v1/publish-plans/"+strconv.FormatInt(plan.ID, 10)+"/finalize" {
+		return false
+	}
+	if plan.Delta.Added < 0 || plan.Delta.Changed < 0 || plan.Delta.Reused < 0 || plan.Delta.Removed < 0 ||
+		plan.Delta.Added+plan.Delta.Changed+plan.Delta.Reused != len(entries) {
 		return false
 	}
 	expected := make(map[string]int64)

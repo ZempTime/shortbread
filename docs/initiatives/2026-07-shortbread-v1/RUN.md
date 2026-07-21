@@ -5,13 +5,13 @@
 | Run | `2026-07-18-shortbread-v1` |
 | Work item | [ZempTime/shortbread](https://github.com/ZempTime/shortbread); direct design and authority conversation |
 | Initializer | Claude Code on Claude Fable 5 (`claude-fable-5`) |
-| Current controller | None; the next fresh controller claims C00/U01 |
+| Current controller | Codex; C00/U01 is claimed on `u01-release-republish-rollback` |
 | Accepted doctrine baseline | Repo-local MWP with bounded campaigns, fresh-context leaf units, TDD, proportionate independent review, durable pause/recovery, and explicit credential boundary |
 | Repository authority | Implement, review, repair, document, package, and prepare deployment of the accepted Shortbread v1 scope |
 | External authority | Configure the GitHub issue tracker; create/update issues, branches, commits, pull requests, releases, packages, and deployment configuration inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
-| State token | `campaign-ready` |
-| Current state | Stage 05 is promoted. GitHub U01/#19 is the sole executable frontier; all other leaves are blocked and no product implementation is active |
+| State token | `execution-active` |
+| Current state | C00/U01/#19 is the sole claimed execution unit; all other leaves remain blocked |
 
 ## Input Snapshot
 
@@ -37,18 +37,18 @@
 
 | Field | State |
 |---|---|
-| Reconciled | 2026-07-20, after remote preservation, graph review, GitHub publication, and umbrella reconciliation |
+| Reconciled | 2026-07-20, after C00/U01 claim and remote branch creation |
 | Integration branch/head | `main`; product code baseline includes merged #2 at `f2e0326`; Stage 05 coordination is the commit containing this capsule |
-| Release candidate | `ticket-3-releases-rollback` local and remote at `f5943d7`; no PR/review target yet |
+| Release candidate | Fresh branch `u01-release-republish-rollback` local and remote at baseline `8faa3d0`; preserved `ticket-3-releases-rollback@f5943d7` is fixed source/review evidence only |
 | Auth source evidence | `ticket-4-owner-cli-auth` local and remote at `8fcb22f`; no PR; replay semantically only after U01 |
-| Worktrees | Old `/private/tmp/shortbread-ticket-{3,4}` paths are missing/prunable and are not recovery sources |
-| Dirty state | Clean after Stage 05 promotion; no product implementation is active |
+| Worktrees | Active U01 worktree: `/Users/chris/code/chriszempel_apps/shortbread-share/tmp/u01-release-republish-rollback`; old ticket 3/4 registrations were pruned after their remote heads were verified |
+| Dirty state | Clean at claim; only controller-owned claim edits precede the first U01 behavioral red test |
 | Collision | Both preserved branches edit `config/routes.rb`; Release branch removes `db/schema.rb` for SQL structure dumps while auth branch edits it |
 | Dependency state | Frozen/audited at `3c40a67`; manifest/lock/tool changes require ADR 0007 exception |
-| Review state | Stage 05 decomposition passed controller graph/coverage review; U01 has no implementation PR or verdict yet |
-| Reserved surfaces | None until a fresh C00 controller claims U01 and records its durable branch/worktree |
+| Review state | Fixed preserved-head Standards/Spec and data-integrity reviews are in progress; implementation review target is `8faa3d0..u01-release-republish-rollback` at a future fixed candidate SHA |
+| Reserved surfaces | U01 exclusively reserves migration/SQL schema format, `config/routes.rb`, Release/publishing models/services/controllers, CLI Release API/command registration, and the real Release tracer; Owner UI/auth/dependencies/deployment and U02 are forbidden |
 | True stop | Product-scope/trust/authority change, preservation failure, or unreconcilable tracker mutation—not ordinary graph edits |
-| Next action | A fresh C00 controller reads `AGENTS.md`, `docs/agents/mwp.md`, this capsule, the Stage 05 tracker/unit contract/U01 card, original #3, and ADR 0003; reconciles `ticket-3-releases-rollback` at `f5943d7` onto current `main`; then creates a durable worktree, branch, and draft PR for [U01/#19](https://github.com/ZempTime/shortbread/issues/19). Do not begin U02 before U01 is reviewed and integrated |
+| Next action | In the claimed U01 worktree, write and retain the first meaningful failing Release behavior test, then replay only the reviewed product behavior from `ticket-3-releases-rollback@f5943d7`; open a draft PR at the first green checkpoint. Do not begin U02 before U01 is reviewed and integrated |
 
 ## Campaign Model
 

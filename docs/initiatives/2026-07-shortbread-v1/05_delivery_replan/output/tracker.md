@@ -4,7 +4,7 @@ Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the exec
 
 | Unit | Acceptance umbrella | Blocked by units | GitHub | State |
 |---|---:|---|---|---|
-| U01 | #3 | #2 integrated | [#19](https://github.com/ZempTime/shortbread/issues/19) | `ready-for-agent` frontier |
+| U01 | #3 | #2 integrated | [#19](https://github.com/ZempTime/shortbread/issues/19) | Claimed by C00 on `u01-release-republish-rollback` from `8faa3d0` |
 | U02 | #4 | U01 | [#20](https://github.com/ZempTime/shortbread/issues/20) | Blocked |
 | U03 | #12 | U02 | [#21](https://github.com/ZempTime/shortbread/issues/21) | Blocked |
 | U04 | #13 | U03 | [#22](https://github.com/ZempTime/shortbread/issues/22) | Blocked |

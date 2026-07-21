@@ -150,17 +150,11 @@ class SiteContentTest < ActionDispatch::IntegrationTest
         byte_size: content.bytesize
       )
       blob = Blob.create!(sha256: digest, byte_size: content.bytesize, storage_key:)
-      release = site.releases.create!(
-        number: 1,
-        manifest_sha256: Digest::SHA256.hexdigest("manifest"),
-        finalized_at: Time.current
-      )
-      release.manifest_entries.create!(
-        blob:,
-        path: "index.html",
-        byte_size: content.bytesize,
-        content_type: "text/html",
-        offline_policy: "required"
+      release = assemble_test_release!(
+        site:, number: 1, manifest_sha256: Digest::SHA256.hexdigest("manifest"), finalized_at: Time.current,
+        entries: [ {
+          blob:, path: "index.html", byte_size: content.bytesize, content_type: "text/html", offline_policy: "required"
+        } ]
       )
       site.update!(current_release: release)
 

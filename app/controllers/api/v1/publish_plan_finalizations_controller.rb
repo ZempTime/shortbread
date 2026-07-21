@@ -23,6 +23,8 @@ module Api
         render_error("publish_plan_expired", :conflict)
       rescue Publishing::StalePublishPlan
         render_error("stale_publish_plan", :conflict)
+      rescue Publishing::InconsistentPublishPlan
+        render_error("inconsistent_publish_plan", :conflict)
       end
 
       private

@@ -8,6 +8,9 @@ Rails.application.routes.draw do
     namespace :v1 do
       resources :sites, only: :create, param: :slug do
         resources :publish_plans, only: :create, path: "publish-plans"
+        resources :releases, only: :index, param: :number do
+          post :rollback, on: :member, controller: "release_rollbacks", action: :create
+        end
       end
       resources :people, only: :create
       resources :grants, only: :create do

@@ -66,7 +66,7 @@ func TestPublishScansPlansUploadsAndFinalizesOneHTMLFile(t *testing.T) {
 			}
 			response.Header().Set("Content-Type", "application/json")
 			response.WriteHeader(http.StatusCreated)
-			_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","uploads":[{"sha256":"`+digestHex+`","size":`+strconv.Itoa(len(content))+`,"method":"PUT","url":"/api/v1/publish-plans/19/blobs/`+digestHex+`","headers":{"Content-Type":"application/octet-stream"}}],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
+			_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","delta":{"added":1,"changed":0,"reused":0,"removed":0},"uploads":[{"sha256":"`+digestHex+`","size":`+strconv.Itoa(len(content))+`,"method":"PUT","url":"/api/v1/publish-plans/19/blobs/`+digestHex+`","headers":{"Content-Type":"application/octet-stream"}}],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
 		case 2:
 			if request.Method != http.MethodPut || request.URL.Path != "/api/v1/publish-plans/19/blobs/"+digestHex {
 				t.Fatalf("upload request = %s %s", request.Method, request.URL.Path)
@@ -110,7 +110,7 @@ func TestPublishScansPlansUploadsAndFinalizesOneHTMLFile(t *testing.T) {
 	if requests != 3 {
 		t.Fatalf("network requests = %d, want plan/upload/finalize", requests)
 	}
-	wantOutput := "{\"ok\":true,\"result\":{\"resource\":\"release\",\"id\":23,\"status\":\"published\",\"number\":1,\"files\":1,\"uploaded\":1,\"reused\":0,\"bytes\":" + strconv.Itoa(len(content)) + "}}\n"
+	wantOutput := "{\"ok\":true,\"result\":{\"resource\":\"release\",\"id\":23,\"status\":\"published\",\"number\":1,\"files\":1,\"uploaded\":1,\"added\":1,\"changed\":0,\"reused\":0,\"removed\":0,\"bytes\":" + strconv.Itoa(len(content)) + "}}\n"
 	if stdout.String() != wantOutput || stderr.Len() != 0 {
 		t.Fatalf("output = %q / %q, want fixed success JSON", stdout.String(), stderr.String())
 	}
@@ -210,7 +210,7 @@ func TestPublishSkipsAReusableBlobAndStillFinalizes(t *testing.T) {
 				t.Fatal("first request was not the publish plan")
 			}
 			response.WriteHeader(http.StatusCreated)
-			_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","uploads":[],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
+			_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","delta":{"added":0,"changed":0,"reused":1,"removed":0},"uploads":[],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
 		case 2:
 			if request.Method != http.MethodPost || request.URL.Path != "/api/v1/publish-plans/19/finalize" {
 				t.Fatal("reusable Blob caused an upload request")
@@ -240,7 +240,7 @@ func TestPublishSkipsAReusableBlobAndStillFinalizes(t *testing.T) {
 	if exitCode := command.Execute(context.Background(), args, runtime); exitCode != 0 {
 		t.Fatalf("Execute exit code = %d; output=%q/%q", exitCode, stdout.String(), stderr.String())
 	}
-	want := "{\"ok\":true,\"result\":{\"resource\":\"release\",\"id\":23,\"status\":\"published\",\"number\":2,\"files\":1,\"uploaded\":0,\"reused\":1,\"bytes\":" + strconv.Itoa(len(content)) + "}}\n"
+	want := "{\"ok\":true,\"result\":{\"resource\":\"release\",\"id\":23,\"status\":\"published\",\"number\":2,\"files\":1,\"uploaded\":0,\"added\":0,\"changed\":0,\"reused\":1,\"removed\":0,\"bytes\":" + strconv.Itoa(len(content)) + "}}\n"
 	if requests != 2 || stdout.String() != want || stderr.Len() != 0 {
 		t.Fatalf("result = requests:%d %q/%q, want missing-only finalize", requests, stdout.String(), stderr.String())
 	}
@@ -266,7 +266,7 @@ func TestPublishFailsClosedIfAFileChangesAfterPlanning(t *testing.T) {
 		}
 		response.Header().Set("Content-Type", "application/json")
 		response.WriteHeader(http.StatusCreated)
-		_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","uploads":[{"sha256":"`+digestHex+`","size":`+strconv.Itoa(len(original))+`,"method":"PUT","url":"/api/v1/publish-plans/19/blobs/`+digestHex+`","headers":{"Content-Type":"application/octet-stream"}}],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
+		_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","delta":{"added":1,"changed":0,"reused":0,"removed":0},"uploads":[{"sha256":"`+digestHex+`","size":`+strconv.Itoa(len(original))+`,"method":"PUT","url":"/api/v1/publish-plans/19/blobs/`+digestHex+`","headers":{"Content-Type":"application/octet-stream"}}],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
 	}))
 	defer server.Close()
 	var stdout bytes.Buffer
@@ -294,5 +294,63 @@ func TestPublishFailsClosedIfAFileChangesAfterPlanning(t *testing.T) {
 		if strings.Contains(stdout.String()+stderr.String(), marker) {
 			t.Fatal("changed-file failure exposed private material")
 		}
+	}
+}
+
+func TestPublishReusesDurableOperationKeyAfterAnAmbiguousFinalize(t *testing.T) {
+	directory := t.TempDir()
+	content := []byte("<h1>retry</h1>")
+	if err := os.WriteFile(filepath.Join(directory, "index.html"), content, 0o600); err != nil {
+		t.Fatal("write Bundle")
+	}
+	stateDir := t.TempDir()
+	randomBytes := bytes.Repeat([]byte{0x44}, 32)
+	wantKey := base64.RawURLEncoding.EncodeToString(randomBytes)
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		requests++
+		if request.Header.Get("Idempotency-Key") != "" && request.Header.Get("Idempotency-Key") != wantKey {
+			t.Fatal("publish changed its operation key")
+		}
+		response.Header().Set("Content-Type", "application/json")
+		switch requests {
+		case 1:
+			response.WriteHeader(http.StatusCreated)
+			_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","delta":{"added":1,"changed":0,"reused":0,"removed":0},"uploads":[],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
+		case 2:
+			response.WriteHeader(http.StatusInternalServerError)
+		case 3:
+			response.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"finalized","delta":{"added":1,"changed":0,"reused":0,"removed":0},"uploads":[],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
+		case 4:
+			response.WriteHeader(http.StatusOK)
+			_, _ = io.WriteString(response, `{"release":{"id":23,"site_slug":"first-site","number":1,"manifest_sha256":"`+strings.Repeat("f", 64)+`"}}`)
+		default:
+			t.Fatal("unexpected retry request")
+		}
+	}))
+	defer server.Close()
+
+	lookup := func(name string) (string, bool) {
+		switch name {
+		case "SHORTBREAD_TOKEN":
+			return "TOKEN_MARKER", true
+		case "SHORTBREAD_STATE_DIR":
+			return stateDir, true
+		default:
+			return "", false
+		}
+	}
+	args := []string{"--server", server.URL, "--json", "publish", directory, "--site", "first-site"}
+	firstOut := &bytes.Buffer{}
+	if exit := command.Execute(context.Background(), args, command.Runtime{LookupEnv: lookup, Random: bytes.NewReader(randomBytes), Stdout: firstOut}); exit != 4 {
+		t.Fatalf("first exit = %d, want ambiguous request failure", exit)
+	}
+	secondOut := &bytes.Buffer{}
+	if exit := command.Execute(context.Background(), args, command.Runtime{LookupEnv: lookup, Random: strings.NewReader(""), Stdout: secondOut}); exit != 0 {
+		t.Fatalf("retry exit = %d, output=%q", exit, secondOut.String())
+	}
+	if requests != 4 || !strings.Contains(secondOut.String(), `"number":1`) {
+		t.Fatalf("retry evidence requests=%d output=%q", requests, secondOut.String())
 	}
 }

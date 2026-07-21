@@ -72,6 +72,7 @@ func execute(ctx context.Context, args []string, runtime Runtime, deps dependenc
 	root.AddCommand(newAccessCommand(runtime, &server, &jsonOutput))
 	root.AddCommand(newInviteCommand(runtime, &server, &jsonOutput, deps))
 	root.AddCommand(newPublishCommand(runtime, &server, &jsonOutput))
+	root.AddCommand(newReleasesCommand(runtime, &server, &jsonOutput))
 	root.SetArgs(args)
 	root.SetOut(stdout)
 	root.SetErr(io.Discard)
@@ -141,7 +142,10 @@ type publishSuccessResult struct {
 	Number   int64  `json:"number"`
 	Files    int    `json:"files"`
 	Uploaded int    `json:"uploaded"`
+	Added    int    `json:"added"`
+	Changed  int    `json:"changed"`
 	Reused   int    `json:"reused"`
+	Removed  int    `json:"removed"`
 	Bytes    int64  `json:"bytes"`
 }
 
@@ -309,6 +313,7 @@ func newInviteCommand(runtime Runtime, server *string, jsonOutput *bool, deps de
 
 func newPublishCommand(runtime Runtime, server *string, jsonOutput *bool) *cobra.Command {
 	var siteSlug string
+	var newOperation bool
 	publish := &cobra.Command{
 		Use:          "publish <directory>",
 		Short:        "Publish a Bundle as an immutable Release",
@@ -332,16 +337,15 @@ func newPublishCommand(runtime Runtime, server *string, jsonOutput *bool) *cobra
 			if err != nil {
 				return err
 			}
-			if runtime.Random == nil {
+			manifestIdentity, err := json.Marshal(manifest)
+			if err != nil {
 				return &failureError{failure: internalFailure}
 			}
-			var entropy [32]byte
-			defer clear(entropy[:])
-			if _, err := io.ReadFull(runtime.Random, entropy[:]); err != nil {
+			key, err := acquireOperationKey(runtime, newOperation, "publish", *server, siteSlug, string(manifestIdentity))
+			if err != nil {
 				return &failureError{failure: internalFailure}
 			}
-			idempotencyKey := base64.RawURLEncoding.EncodeToString(entropy[:])
-			plan, err := client.CreatePublishPlan(command.Context(), siteSlug, idempotencyKey, manifest)
+			plan, err := client.CreatePublishPlan(command.Context(), siteSlug, key.value, manifest)
 			if err != nil {
 				return &failureError{failure: requestFailed}
 			}
@@ -370,16 +374,23 @@ func newPublishCommand(runtime Runtime, server *string, jsonOutput *bool) *cobra
 				Number:   release.Number,
 				Files:    len(entries),
 				Uploaded: len(plan.Uploads),
-				Reused:   len(entries) - len(plan.Uploads),
+				Added:    plan.Delta.Added,
+				Changed:  plan.Delta.Changed,
+				Reused:   plan.Delta.Reused,
+				Removed:  plan.Delta.Removed,
 				Bytes:    totalBytes,
 			}
 			if err := writePublishSuccess(runtime.Stdout, *jsonOutput, result); err != nil {
+				return &failureError{failure: internalFailure}
+			}
+			if err := key.complete(); err != nil {
 				return &failureError{failure: internalFailure}
 			}
 			return nil
 		},
 	}
 	publish.Flags().StringVar(&siteSlug, "site", "", "Site slug")
+	publish.Flags().BoolVar(&newOperation, "new-operation", false, "replace an expired or abandoned publish retry")
 	return publish
 }
 
@@ -464,8 +475,8 @@ func writePublishSuccess(output io.Writer, jsonOutput bool, result publishSucces
 		}{OK: true, Result: result}
 		return json.NewEncoder(output).Encode(envelope)
 	}
-	_, err := fmt.Fprintf(output, "Release %d published; %d files, %d uploaded, %d reused, %d bytes.\n",
-		result.Number, result.Files, result.Uploaded, result.Reused, result.Bytes)
+	_, err := fmt.Fprintf(output, "Release %d published; %d files, %d uploaded; %d added, %d changed, %d reused, %d removed; %d bytes.\n",
+		result.Number, result.Files, result.Uploaded, result.Added, result.Changed, result.Reused, result.Removed, result.Bytes)
 	return err
 }
 
