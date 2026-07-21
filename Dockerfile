@@ -52,7 +52,7 @@ RUN aube run build \
     && bundle exec bootsnap precompile --gemfile app/ lib/ \
     && rm -rf node_modules
 
-FROM ruby:${RUBY_VERSION}-slim-bookworm AS runtime
+FROM ruby:${RUBY_VERSION}-slim-trixie AS runtime
 ARG VCS_REF=unknown
 LABEL org.opencontainers.image.source="https://github.com/ZempTime/shortbread" \
       org.opencontainers.image.revision="$VCS_REF" \
