@@ -5,13 +5,13 @@
 | Run | `2026-07-18-shortbread-v1` |
 | Work item | [ZempTime/shortbread](https://github.com/ZempTime/shortbread); direct design and authority conversation |
 | Initializer | Claude Code on Claude Fable 5 (`claude-fable-5`) |
-| Current controller | Codex `/root`; bounded campaign C01, with `/root/u03_implementation` assigned only to U03/#21 |
+| Current controller | None; C01/U03 is paused at a clean remote repair head while the Operator selects the launch-today deployment path |
 | Accepted doctrine baseline | Repo-local MWP with bounded campaigns, fresh-context leaf units, TDD, proportionate independent review, durable pause/recovery, and explicit credential boundary |
 | Repository authority | Implement, review, repair, document, package, and prepare deployment of the accepted Shortbread v1 scope |
 | External authority | Configure the GitHub issue tracker; create/update issues, branches, commits, pull requests, releases, packages, and deployment configuration inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
-| State token | `execution-active` |
-| Current state | C01 is active at its sole frontier U03/#21 from `main@173f096`; U04/#22 remains blocked by U03, and U05/#23 remains campaign-gated for C02 |
+| State token | `campaign-paused` |
+| Current state | U03 review repairs are pushed at `379d001` and await affected-axis rereview; U04 has not started. The Operator reprioritized from roadmap execution to the shortest usable deployment today |
 
 ## Input Snapshot
 
@@ -39,16 +39,16 @@
 |---|---|
 | Reconciled | 2026-07-21 by C01 controller `/root`; local `main`, `origin/main`, and GitHub `main` equal `173f09644c140599a706fabfffee0ae0e1289437`; issue #21 is open and unassigned with no open PR before claim |
 | Integration branch/head | `main@173f09644c140599a706fabfffee0ae0e1289437` is the pinned U03 baseline; controller coordination advances separately on `main` |
-| Release candidate | U03 fixed review head is clean local/remote `u03-production-runtime@d4d058a37cdac284a305c4e0cfe529fce2a36e3f` in draft [PR #61](https://github.com/ZempTime/shortbread/pull/61), from pinned product baseline `173f09644c140599a706fabfffee0ae0e1289437` |
+| Release candidate | U03 clean local/remote repair head is `u03-production-runtime@379d001820a9c9309462d7e73eae33d98def0e35` in draft [PR #61](https://github.com/ZempTime/shortbread/pull/61), from pinned product baseline `173f09644c140599a706fabfffee0ae0e1289437`; rereview has not run |
 | Auth source evidence | Historical `ticket-4-owner-cli-auth` remains local and remote at `8fcb22f`; its accepted U02 behavior is represented on main by PR #59, and the source branch is no longer merge material |
 | Worktrees | Active U03 worktree `/private/tmp/shortbread-u03` on `u03-production-runtime`; clean U02, policy-repair, U01 implementation, and detached U01 replay worktrees remain inactive durable evidence |
-| Dirty state | Root and new U03 worktree were clean at claim; no overlapping implementation or open PR exists |
+| Dirty state | Root and U03 worktrees are clean; local/remote U03 heads match and no overlapping implementation exists |
 | Collision | U03 is the only active product implementation. U04 stays blocked and U05 auth/session work stays unscheduled until C02 |
 | Dependency state | Frozen dependency/tool versions, installer pins, telemetry controls, and lockfiles remain unchanged. Authorized PR #58 task-only changes are reconciled to the exact frozen `mise.toml` digest by reviewed [PR #60](https://github.com/ZempTime/shortbread/pull/60) at merge `1a65ae3` |
-| Review state | Independent review blocked fixed head `d4d058a`. General review found Docker context could include Git-ignored local secrets. Operations/container/security review found database identity normalization, AnyCable URL redaction, and worker-instance health defects; it also requested a real writable-Blob probe. The Operator-approved U28 scan disposition remains accepted. All blocking/should-fix findings return through the U03 TDD repair loop before affected-axis rereview |
+| Review state | Independent review blocked `d4d058a`; all findings were repaired test-first at `379d001`. Focused repair evidence is 18 tests/171 assertions; full repair evidence is 167 Rails tests/1,646 assertions plus all Go tests, lint, typecheck, build, and security green. Affected-axis rereview has not run. The Operator-approved U28 scan disposition remains accepted |
 | Reserved surfaces | U03 exclusively owns container/release configuration, process commands, production environment validation, process-specific health routes/probes, production-shaped smoke harnesses, and root operations documentation. Dependency manifests/lockfiles, schema, unrelated routes, screenshots, and `agents/` remain forbidden without controller exception. General Standards + Spec review and an independent operations/container/security specialist review target the same fixed pushed head |
 | True stop | Product-scope/trust/authority change, preservation failure, or unreconcilable tracker mutation—not ordinary graph edits |
-| Next action | `/root/u03_implementation` repairs the fixed-head review findings test-first: exclude every documented local secret path from Docker context, normalize/require distinct PostgreSQL database identities, reject secret-bearing AnyCable URLs, bind worker health to the current role instance, and prove writable private-Blob operations; then push a new fixed head for affected-axis rereview |
+| Next action | The Operator confirms whether launch today will use the recommended single Docker host plus an apex domain/wildcard DNS; then a fresh controller performs only the shortest deployment-critical sequence, beginning with affected-axis rereview of `379d001` |
 
 ## Campaign Model
 
