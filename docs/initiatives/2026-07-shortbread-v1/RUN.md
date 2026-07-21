@@ -38,7 +38,7 @@
 | Field | State |
 |---|---|
 | Reconciled | 2026-07-21, after reviewed dependency-policy repair PR #60 and reviewed U02 PR #59 integrated into `main` |
-| Integration branch/head | `main@181745c` locally and on `origin`; the commit containing this capsule is the final C00 coordination head |
+| Integration branch/head | `main`; integrated C00 product head is `181745c`, and the commit containing this capsule is the current local/remote coordination head |
 | Release candidate | U02 fixed candidate `c523fac` is integrated by [PR #59](https://github.com/ZempTime/shortbread/pull/59) as merge `181745c`; its normal merge from `main@1a65ae3` preserved reviewed history |
 | Auth source evidence | Historical `ticket-4-owner-cli-auth` remains local and remote at `8fcb22f`; its accepted U02 behavior is represented on main by PR #59, and the source branch is no longer merge material |
 | Worktrees | No active execution worktree. Clean U02, policy-repair, U01 implementation, and detached U01 replay worktrees remain inactive durable evidence; resume does not depend on their paths |
