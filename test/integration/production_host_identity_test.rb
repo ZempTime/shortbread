@@ -77,7 +77,8 @@ class ProductionHostIdentityTest < ActiveSupport::TestCase
         "RAILS_LOG_LEVEL" => "fatal",
         "SECRET_KEY_BASE" => "synthetic-production-host-boundary-key-0123456789abcdef",
         "SHORTBREAD_APEX_HOST" => "shortbread.example",
-        "SHORTBREAD_BLOB_ROOT" => "/var/lib/shortbread/blobs"
+        "SHORTBREAD_BLOB_ROOT" => "/var/lib/shortbread/blobs",
+        "SHORTBREAD_BOOTSTRAP_TOKEN" => "c" * 64
       },
       RbConfig.ruby,
       Rails.root.join("bin/rails").to_s,
