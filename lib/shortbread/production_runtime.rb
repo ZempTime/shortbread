@@ -92,7 +92,6 @@ module Shortbread
       options = postgresql_query_options(uri)
       identity = database_identity_from(uri, options)
       %w[postgres postgresql].include?(uri.scheme) &&
-        uri.host && !uri.host.empty? &&
         database_path.match?(%r{\A/[^/]+\z}) &&
         identity[0] && !identity[0].empty? &&
         identity[1].between?(1, 65_535) &&
@@ -119,11 +118,16 @@ module Shortbread
       port = options.fetch("port", uri.port || 5432)
       database = options.fetch("database", decoded_database_path(uri).delete_prefix("/"))
 
-      [ host.to_s.downcase, Integer(port.to_s, 10), database ]
+      [ normalized_postgresql_host(host), Integer(port.to_s, 10), database ]
     end
 
     def decoded_database_path(uri)
       URI::DEFAULT_PARSER.unescape(uri.path.to_s)
+    end
+
+    def normalized_postgresql_host(host)
+      host = host.to_s
+      host.start_with?("/") ? host : host.downcase
     end
 
     def postgresql_query_options(uri)

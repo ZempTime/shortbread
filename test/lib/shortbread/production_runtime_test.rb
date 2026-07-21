@@ -139,4 +139,22 @@ class ProductionRuntimeTest < ActiveSupport::TestCase
       refute_includes error.message, database_url, parameter
     end
   end
+
+  test "PostgreSQL URLs accept a host supplied only by an encoded Unix socket query" do
+    environment = VALID_ENVIRONMENT.merge(
+      "DATABASE_URL" => "postgresql:///shortbread?host=%2Ftmp%2FPGSock",
+      "QUEUE_DATABASE_URL" => "postgresql:///shortbread_queue?host=%2Ftmp%2FPGSock"
+    )
+
+    assert Shortbread::ProductionRuntime.new(environment).validate!
+  end
+
+  test "database separation preserves case-sensitive Unix socket paths" do
+    environment = VALID_ENVIRONMENT.merge(
+      "DATABASE_URL" => "postgresql:///shortbread?host=%2Ftmp%2FPGSock",
+      "QUEUE_DATABASE_URL" => "postgresql:///shortbread?host=%2Ftmp%2Fpgsock"
+    )
+
+    assert Shortbread::ProductionRuntime.new(environment).validate!
+  end
 end
