@@ -6,7 +6,7 @@ Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the exec
 |---|---:|---|---|---|
 | U01 | #3 | #2 integrated | [#19](https://github.com/ZempTime/shortbread/issues/19) | Integrated by [#57](https://github.com/ZempTime/shortbread/pull/57) at `45db8bd`; reviewed candidate `21a08c9` |
 | U02 | #4 | U01 | [#20](https://github.com/ZempTime/shortbread/issues/20) | Integrated by [#59](https://github.com/ZempTime/shortbread/pull/59) at `181745c`; reviewed candidate `c523fac` |
-| U03 | #12 | U02 | [#21](https://github.com/ZempTime/shortbread/issues/21) | Active in draft [#61](https://github.com/ZempTime/shortbread/pull/61); first green `f0b2c9b`, worker `/root/u03_implementation`, baseline `173f096` |
+| U03 | #12 | U02 | [#21](https://github.com/ZempTime/shortbread/issues/21) | Active in draft [#61](https://github.com/ZempTime/shortbread/pull/61); second green `e58dbb6`, worker `/root/u03_implementation`, baseline `173f096` |
 | U04 | #13 | U03 | [#22](https://github.com/ZempTime/shortbread/issues/22) | Blocked |
 | U05 | #4 | U02 | [#23](https://github.com/ZempTime/shortbread/issues/23) | Dependency-satisfied; campaign-gated for C02 |
 | U06 | #4 | U05 | [#24](https://github.com/ZempTime/shortbread/issues/24) | Blocked |

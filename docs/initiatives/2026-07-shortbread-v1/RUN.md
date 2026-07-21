@@ -39,16 +39,16 @@
 |---|---|
 | Reconciled | 2026-07-21 by C01 controller `/root`; local `main`, `origin/main`, and GitHub `main` equal `173f09644c140599a706fabfffee0ae0e1289437`; issue #21 is open and unassigned with no open PR before claim |
 | Integration branch/head | `main@173f09644c140599a706fabfffee0ae0e1289437` is the pinned U03 baseline; controller coordination advances separately on `main` |
-| Release candidate | U03 first green checkpoint is local/remote `u03-production-runtime@f0b2c9b` in draft [PR #61](https://github.com/ZempTime/shortbread/pull/61), from pinned product baseline `173f09644c140599a706fabfffee0ae0e1289437`; implementation continues and review will fix a later pushed head rather than this moving branch |
+| Release candidate | U03 second green checkpoint is local/remote `u03-production-runtime@e58dbb6` in draft [PR #61](https://github.com/ZempTime/shortbread/pull/61), from pinned product baseline `173f09644c140599a706fabfffee0ae0e1289437`; commit-matched image smoke/scan evidence is running before the fixed review target is declared |
 | Auth source evidence | Historical `ticket-4-owner-cli-auth` remains local and remote at `8fcb22f`; its accepted U02 behavior is represented on main by PR #59, and the source branch is no longer merge material |
 | Worktrees | Active U03 worktree `/private/tmp/shortbread-u03` on `u03-production-runtime`; clean U02, policy-repair, U01 implementation, and detached U01 replay worktrees remain inactive durable evidence |
 | Dirty state | Root and new U03 worktree were clean at claim; no overlapping implementation or open PR exists |
 | Collision | U03 is the only active product implementation. U04 stays blocked and U05 auth/session work stays unscheduled until C02 |
 | Dependency state | Frozen dependency/tool versions, installer pins, telemetry controls, and lockfiles remain unchanged. Authorized PR #58 task-only changes are reconciled to the exact frozen `mise.toml` digest by reviewed [PR #60](https://github.com/ZempTime/shortbread/pull/60) at merge `1a65ae3` |
-| Review state | U03 is not yet review-ready. Its first focused green at `f0b2c9b` covered production configuration, shared role commands, liveness/readiness, and production host compatibility with 9 tests / 118 assertions; fixed-head general and operations/container/security reviews remain required after full evidence |
+| Review state | U03 is not yet review-ready. Full smoke plus test/static/build/security/bootstrap gates were green before `e58dbb6`; exact-commit image smoke/scan/SBOM evidence and fixed-head general plus operations/container/security reviews remain required |
 | Reserved surfaces | U03 exclusively owns container/release configuration, process commands, production environment validation, process-specific health routes/probes, production-shaped smoke harnesses, and root operations documentation. Dependency manifests/lockfiles, schema, unrelated routes, screenshots, and `agents/` remain forbidden without controller exception. General Standards + Spec review and an independent operations/container/security specialist review target the same fixed pushed head |
 | True stop | Product-scope/trust/authority change, preservation failure, or unreconcilable tracker mutation—not ordinary graph edits |
-| Next action | `/root/u03_implementation` completes the one-image Compose contract and real Docker smoke from draft PR #61, then fixes a pushed review head with full evidence; do not start U04 until U03 integrates or U05/C02 in this context |
+| Next action | `/root/u03_implementation` completes exact-`e58dbb6` image smoke/scan/SBOM evidence and fixes the pushed review target for PR #61; do not start U04 until U03 integrates or U05/C02 in this context |
 
 ## Campaign Model
 
