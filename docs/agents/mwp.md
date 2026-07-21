@@ -74,6 +74,8 @@ Temporary worktree paths are convenience state. A resume cannot depend on them e
 
 An initiative's `RUN.md` defines its authority envelope. When it grants autonomous execution, starting the goal is the operator's approval of the canonical PRD, initial ticket graph, and actions inside that envelope. The controller may approve routine subordinate output and reversible implementation decisions without returning to the operator.
 
+For trusted Shortbread sessions, follow [`autonomous-execution.md`](autonomous-execution.md): use its stable `mise run agent:*` commands, keep unrelated shell effects separate, and let project-scoped automatic review handle eligible runtime escalations.
+
 Authority is still bounded. Missing credentials are inputs; they are not invitations to bypass security. Changes to fixed product invariants, paid commitments, destructive production actions, new external processors, or authority outside the named repository/resources remain stop conditions unless the `RUN.md` explicitly says otherwise.
 
 ## Evidence and completion

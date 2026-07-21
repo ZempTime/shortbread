@@ -1,0 +1,50 @@
+# Local Git durability inside the current trusted Shortbread repository.
+prefix_rule(
+    pattern = ["git", ["add", "commit", "cherry-pick"]],
+    decision = "allow",
+    justification = "The active RUN authority permits durable, recoverable implementation checkpoints.",
+)
+prefix_rule(
+    pattern = ["git", "worktree", ["add", "prune", "remove"]],
+    decision = "allow",
+    justification = "MWP requires isolated delivery worktrees and stale-registration cleanup.",
+)
+
+# Remote durability is restricted to the configured origin.
+prefix_rule(
+    pattern = ["git", "fetch", "origin"],
+    decision = "allow",
+    justification = "Controllers reconcile remote Shortbread state before claiming and integrating work.",
+)
+prefix_rule(
+    pattern = ["git", "push", "origin"],
+    decision = "allow",
+    justification = "The active RUN authority permits pushing reviewed campaign checkpoints to origin.",
+)
+prefix_rule(
+    pattern = ["git", "push", "-u", "origin"],
+    decision = "allow",
+    justification = "The active RUN authority permits publishing a claimed delivery branch to origin.",
+)
+prefix_rule(
+    pattern = ["git", "pull", "--ff-only", "origin"],
+    decision = "allow",
+    justification = "Fast-forward-only integration sync cannot create an implicit merge commit.",
+)
+
+# GitHub issue and PR verbs used by the bounded controller lifecycle.
+prefix_rule(
+    pattern = ["gh", "issue", ["view", "list", "edit", "comment", "close", "reopen"]],
+    decision = "allow",
+    justification = "RUN grants issue coordination and durable completion updates in ZempTime/shortbread.",
+)
+prefix_rule(
+    pattern = ["gh", "pr", ["view", "list", "checks", "create", "edit", "ready", "merge"]],
+    decision = "allow",
+    justification = "RUN grants PR creation, review reconciliation, and merging reviewed green leaves.",
+)
+prefix_rule(
+    pattern = ["gh", "label", "list"],
+    decision = "allow",
+    justification = "Controllers may inspect the repository's coordination label vocabulary.",
+)
