@@ -1,12 +1,12 @@
 # Stage 05 Delivery Tracker
 
-Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the executable leaves; original #3–#17 remain acceptance umbrellas. C00 completed on 2026-07-21 with U01/#19 and U02/#20 integrated. U03/#21 is the sole promoted C01 frontier. U05/#23 is dependency-satisfied but remains campaign-gated for C02; every other leaf remains blocked by dependency or campaign order.
+Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the executable leaves; original #3–#17 remain acceptance umbrellas. C00 completed on 2026-07-21 with U01/#19 and U02/#20 integrated. C01 controller `/root` claimed U03/#21 from `main@173f096` for worker `/root/u03_implementation` on branch `u03-production-runtime`; U04/#22 remains blocked by U03. U05/#23 is dependency-satisfied but remains campaign-gated for C02; every other leaf remains blocked by dependency or campaign order.
 
 | Unit | Acceptance umbrella | Blocked by units | GitHub | State |
 |---|---:|---|---|---|
 | U01 | #3 | #2 integrated | [#19](https://github.com/ZempTime/shortbread/issues/19) | Integrated by [#57](https://github.com/ZempTime/shortbread/pull/57) at `45db8bd`; reviewed candidate `21a08c9` |
 | U02 | #4 | U01 | [#20](https://github.com/ZempTime/shortbread/issues/20) | Integrated by [#59](https://github.com/ZempTime/shortbread/pull/59) at `181745c`; reviewed candidate `c523fac` |
-| U03 | #12 | U02 | [#21](https://github.com/ZempTime/shortbread/issues/21) | `ready-for-agent` frontier for C01 |
+| U03 | #12 | U02 | [#21](https://github.com/ZempTime/shortbread/issues/21) | Claimed in C01 by `/root`; worker `/root/u03_implementation`, branch `u03-production-runtime`, baseline `173f096` |
 | U04 | #13 | U03 | [#22](https://github.com/ZempTime/shortbread/issues/22) | Blocked |
 | U05 | #4 | U02 | [#23](https://github.com/ZempTime/shortbread/issues/23) | Dependency-satisfied; campaign-gated for C02 |
 | U06 | #4 | U05 | [#24](https://github.com/ZempTime/shortbread/issues/24) | Blocked |

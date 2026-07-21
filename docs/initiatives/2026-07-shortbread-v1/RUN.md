@@ -5,13 +5,13 @@
 | Run | `2026-07-18-shortbread-v1` |
 | Work item | [ZempTime/shortbread](https://github.com/ZempTime/shortbread); direct design and authority conversation |
 | Initializer | Claude Code on Claude Fable 5 (`claude-fable-5`) |
-| Current controller | None; C00 is complete and the next fresh controller claims C01/U03 |
+| Current controller | Codex `/root`; bounded campaign C01, with `/root/u03_implementation` assigned only to U03/#21 |
 | Accepted doctrine baseline | Repo-local MWP with bounded campaigns, fresh-context leaf units, TDD, proportionate independent review, durable pause/recovery, and explicit credential boundary |
 | Repository authority | Implement, review, repair, document, package, and prepare deployment of the accepted Shortbread v1 scope |
 | External authority | Configure the GitHub issue tracker; create/update issues, branches, commits, pull requests, releases, packages, and deployment configuration inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
-| State token | `campaign-ready` |
-| Current state | C00 is complete: U01/#19 and U02/#20 are integrated. U03/#21 is the sole promoted frontier for C01; U05/#23 is dependency-satisfied but remains campaign-gated for C02 |
+| State token | `execution-active` |
+| Current state | C01 is active at its sole frontier U03/#21 from `main@173f096`; U04/#22 remains blocked by U03, and U05/#23 remains campaign-gated for C02 |
 
 ## Input Snapshot
 
@@ -30,25 +30,25 @@
 | 02 Original ticket map | Complete; superseded for execution only | [Original graph](02_ticket_map/output/2026-07-18-ticket-map.md) / GitHub #2–#17 remain acceptance history |
 | 03 Whole-goal handoff | Historical; superseded | [`GOAL.md`](03_goal_handoff/output/GOAL.md) is retained but must not be relaunched |
 | 04 Original execution | Paused after interrupted attempt | #2 integrated; #3/#4 partial branch evidence preserved under [`04_execution/`](04_execution/) |
-| 05 Delivery replan | Complete through C00; C01/U03 is the next campaign frontier | [Bounded campaign/unit graph](05_delivery_replan/output/2026-07-20-delivery-plan.md), [unit contract](05_delivery_replan/output/UNIT-CONTRACT.md), [published tracker](05_delivery_replan/output/tracker.md), integrated [U01/#19](https://github.com/ZempTime/shortbread/issues/19), integrated [U02/#20](https://github.com/ZempTime/shortbread/issues/20), and merged [PR #59](https://github.com/ZempTime/shortbread/pull/59) |
+| 05 Delivery replan | C01 execution active at U03/#21 | [Bounded campaign/unit graph](05_delivery_replan/output/2026-07-20-delivery-plan.md), [unit contract](05_delivery_replan/output/UNIT-CONTRACT.md), [published tracker](05_delivery_replan/output/tracker.md), integrated [U01/#19](https://github.com/ZempTime/shortbread/issues/19), integrated [U02/#20](https://github.com/ZempTime/shortbread/issues/20), and claimed [U03/#21](https://github.com/ZempTime/shortbread/issues/21) |
 | 99 Harvest | Complete for setup, #2, U01, and U02; no U02 factory promotion | [Setup harvest](99_harvest/output/2026-07-18-goal-setup-harvest.md), Stage 05 process corrections, and the U02 decision in the [delivery tracker](05_delivery_replan/output/tracker.md) |
 
 ## Recovery Capsule
 
 | Field | State |
 |---|---|
-| Reconciled | 2026-07-21, after reviewed dependency-policy repair PR #60 and reviewed U02 PR #59 integrated into `main` |
-| Integration branch/head | `main`; integrated C00 product head is `181745c`, and the commit containing this capsule is the current local/remote coordination head |
-| Release candidate | U02 fixed candidate `c523fac` is integrated by [PR #59](https://github.com/ZempTime/shortbread/pull/59) as merge `181745c`; its normal merge from `main@1a65ae3` preserved reviewed history |
+| Reconciled | 2026-07-21 by C01 controller `/root`; local `main`, `origin/main`, and GitHub `main` equal `173f09644c140599a706fabfffee0ae0e1289437`; issue #21 is open and unassigned with no open PR before claim |
+| Integration branch/head | `main@173f09644c140599a706fabfffee0ae0e1289437` is the pinned U03 baseline; controller coordination advances separately on `main` |
+| Release candidate | None yet. U03 branch `u03-production-runtime` and worktree `/private/tmp/shortbread-u03` start at `173f09644c140599a706fabfffee0ae0e1289437`; review will fix one pushed head rather than a moving branch |
 | Auth source evidence | Historical `ticket-4-owner-cli-auth` remains local and remote at `8fcb22f`; its accepted U02 behavior is represented on main by PR #59, and the source branch is no longer merge material |
-| Worktrees | No active execution worktree. Clean U02, policy-repair, U01 implementation, and detached U01 replay worktrees remain inactive durable evidence; resume does not depend on their paths |
-| Dirty state | Integrated product/review heads were clean and local/remote-equal; this final coordination commit leaves no product implementation active |
-| Collision | None active. U03 owns production runtime/container/process/health surfaces in C01; dependency-satisfied U05 auth/session work stays unscheduled until C02 |
+| Worktrees | Active U03 worktree `/private/tmp/shortbread-u03` on `u03-production-runtime`; clean U02, policy-repair, U01 implementation, and detached U01 replay worktrees remain inactive durable evidence |
+| Dirty state | Root and new U03 worktree were clean at claim; no overlapping implementation or open PR exists |
+| Collision | U03 is the only active product implementation. U04 stays blocked and U05 auth/session work stays unscheduled until C02 |
 | Dependency state | Frozen dependency/tool versions, installer pins, telemetry controls, and lockfiles remain unchanged. Authorized PR #58 task-only changes are reconciled to the exact frozen `mise.toml` digest by reviewed [PR #60](https://github.com/ZempTime/shortbread/pull/60) at merge `1a65ae3` |
 | Review state | Independent Standards + Spec and auth/security reviews approved exact U02 head `c523fac` with no blocker, should-fix, or note findings after current main was merged; full relevant exact-head evidence was green |
-| Reserved surfaces | None until a fresh C01 controller claims U03 and records its baseline, branch/worktree, runtime/container/process/health reservations, review target, and operations specialist seam |
+| Reserved surfaces | U03 exclusively owns container/release configuration, process commands, production environment validation, process-specific health routes/probes, production-shaped smoke harnesses, and root operations documentation. Dependency manifests/lockfiles, schema, unrelated routes, screenshots, and `agents/` remain forbidden without controller exception. General Standards + Spec review and an independent operations/container/security specialist review target the same fixed pushed head |
 | True stop | Product-scope/trust/authority change, preservation failure, or unreconcilable tracker mutation—not ordinary graph edits |
-| Next action | A fresh `ship-goal` controller claims C01 and [U03/#21](https://github.com/ZempTime/shortbread/issues/21) from the final C00 coordination head, creates one isolated U03 branch/worktree, and begins at the production-shaped process/container smoke seam; do not start U05 or any C02 implementation in that context |
+| Next action | `/root/u03_implementation` begins U03 with a meaningful failing production-shaped container/process smoke at `/private/tmp/shortbread-u03`, then opens a draft PR at the first green checkpoint; do not start U04 until U03 integrates or U05/C02 in this context |
 
 ## Campaign Model
 
