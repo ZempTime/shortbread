@@ -5,13 +5,13 @@
 | Run | `2026-07-18-shortbread-v1` |
 | Work item | [ZempTime/shortbread](https://github.com/ZempTime/shortbread); direct design and authority conversation |
 | Initializer | Claude Code on Claude Fable 5 (`claude-fable-5`) |
-| Current controller | Codex; C00/U01 is claimed on `u01-release-republish-rollback` |
+| Current controller | None; the next fresh controller claims C00/U02 |
 | Accepted doctrine baseline | Repo-local MWP with bounded campaigns, fresh-context leaf units, TDD, proportionate independent review, durable pause/recovery, and explicit credential boundary |
 | Repository authority | Implement, review, repair, document, package, and prepare deployment of the accepted Shortbread v1 scope |
 | External authority | Configure the GitHub issue tracker; create/update issues, branches, commits, pull requests, releases, packages, and deployment configuration inside `ZempTime/shortbread` as required by the goal |
 | Initialized | 2026-07-18 |
-| State token | `execution-active` |
-| Current state | C00/U01/#19 is the sole claimed execution unit; all other leaves remain blocked |
+| State token | `campaign-ready` |
+| Current state | U01/#19 is integrated through PR #57; U02/#20 is the sole executable frontier and no product implementation is active |
 
 ## Input Snapshot
 
@@ -30,25 +30,25 @@
 | 02 Original ticket map | Complete; superseded for execution only | [Original graph](02_ticket_map/output/2026-07-18-ticket-map.md) / GitHub #2–#17 remain acceptance history |
 | 03 Whole-goal handoff | Historical; superseded | [`GOAL.md`](03_goal_handoff/output/GOAL.md) is retained but must not be relaunched |
 | 04 Original execution | Paused after interrupted attempt | #2 integrated; #3/#4 partial branch evidence preserved under [`04_execution/`](04_execution/) |
-| 05 Delivery replan | Complete; U01 is campaign-ready | [Bounded campaign/unit graph](05_delivery_replan/output/2026-07-20-delivery-plan.md), [unit contract](05_delivery_replan/output/UNIT-CONTRACT.md), [published tracker](05_delivery_replan/output/tracker.md), and [frontier #19](https://github.com/ZempTime/shortbread/issues/19) |
+| 05 Delivery replan | Complete; U01 integrated and U02 campaign-ready | [Bounded campaign/unit graph](05_delivery_replan/output/2026-07-20-delivery-plan.md), [unit contract](05_delivery_replan/output/UNIT-CONTRACT.md), [published tracker](05_delivery_replan/output/tracker.md), [integrated U01/#19](https://github.com/ZempTime/shortbread/issues/19), and [frontier U02/#20](https://github.com/ZempTime/shortbread/issues/20) |
 | 99 Harvest | Complete for setup and #2; interrupted-run learning promoted into MWP | [Setup harvest](99_harvest/output/2026-07-18-goal-setup-harvest.md) plus Stage 05 process corrections |
 
 ## Recovery Capsule
 
 | Field | State |
 |---|---|
-| Reconciled | 2026-07-20, after C00/U01 claim and remote branch creation |
-| Integration branch/head | `main`; product code baseline includes merged #2 at `f2e0326`; Stage 05 coordination is the commit containing this capsule |
-| Release candidate | Fresh branch `u01-release-republish-rollback` local and remote at baseline `8faa3d0`; preserved `ticket-3-releases-rollback@f5943d7` is fixed source/review evidence only |
+| Reconciled | 2026-07-20, after reviewed U01 integration and U02 frontier promotion |
+| Integration branch/head | `main`; product code includes merged #2 at `f2e0326` and U01 [#57](https://github.com/ZempTime/shortbread/pull/57) at merge `45db8bd`; the commit containing this capsule is the coordination head |
+| Release candidate | U01 fixed candidate `21a08c9` is integrated as merge `45db8bd`; preserved `ticket-3-releases-rollback@f5943d7` remains fixed source/review evidence only |
 | Auth source evidence | `ticket-4-owner-cli-auth` local and remote at `8fcb22f`; no PR; replay semantically only after U01 |
-| Worktrees | Active U01 worktree: `/Users/chris/code/chriszempel_apps/shortbread-share/tmp/u01-release-republish-rollback`; old ticket 3/4 registrations were pruned after their remote heads were verified |
-| Dirty state | Clean at claim; only controller-owned claim edits precede the first U01 behavioral red test |
+| Worktrees | No active execution worktree; inactive U01 implementation and detached clean-replay worktrees remain durable evidence; old ticket 3/4 registrations were pruned after their remote heads were verified |
+| Dirty state | Clean after this coordination-only frontier handoff; no product implementation is active |
 | Collision | Both preserved branches edit `config/routes.rb`; Release branch removes `db/schema.rb` for SQL structure dumps while auth branch edits it |
 | Dependency state | Frozen/audited at `3c40a67`; manifest/lock/tool changes require ADR 0007 exception |
-| Review state | Fixed preserved-head Standards/Spec and data-integrity reviews are in progress; implementation review target is `8faa3d0..u01-release-republish-rollback` at a future fixed candidate SHA |
-| Reserved surfaces | U01 exclusively reserves migration/SQL schema format, `config/routes.rb`, Release/publishing models/services/controllers, CLI Release API/command registration, and the real Release tracer; Owner UI/auth/dependencies/deployment and U02 are forbidden |
+| Review state | Preserved source `f5943d7` was rejected as merge material; independent Standards + Spec and data-integrity reviews both approved exact U01 candidate `21a08c9` with no blockers or should-fix findings |
+| Reserved surfaces | None until a fresh C00 controller claims U02 and records its branch, worktree, baseline, review target, and auth-specific edit surfaces |
 | True stop | Product-scope/trust/authority change, preservation failure, or unreconcilable tracker mutation—not ordinary graph edits |
-| Next action | In the claimed U01 worktree, write and retain the first meaningful failing Release behavior test, then replay only the reviewed product behavior from `ticket-3-releases-rollback@f5943d7`; open a draft PR at the first green checkpoint. Do not begin U02 before U01 is reviewed and integrated |
+| Next action | A fresh C00 controller claims [U02/#20](https://github.com/ZempTime/shortbread/issues/20), reads its unit card and current packet, and semantically replays only accepted auth behavior from `ticket-4-owner-cli-auth@8fcb22f` onto current `main`; do not relaunch U01 or reuse stale schema output |
 
 ## Campaign Model
 

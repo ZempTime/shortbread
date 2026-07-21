@@ -1,11 +1,11 @@
 # Stage 05 Delivery Tracker
 
-Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the executable leaves; original #3–#17 remain acceptance umbrellas. U01/#19 is the sole frontier. Every other leaf stays blocked until all unit dependencies are integrated and the current controller promotes it.
+Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the executable leaves; original #3–#17 remain acceptance umbrellas. U01/#19 is integrated and U02/#20 is the sole frontier. Every other leaf stays blocked until all unit dependencies are integrated and the current controller promotes it.
 
 | Unit | Acceptance umbrella | Blocked by units | GitHub | State |
 |---|---:|---|---|---|
-| U01 | #3 | #2 integrated | [#19](https://github.com/ZempTime/shortbread/issues/19) | Claimed by C00 on `u01-release-republish-rollback` from `8faa3d0` |
-| U02 | #4 | U01 | [#20](https://github.com/ZempTime/shortbread/issues/20) | Blocked |
+| U01 | #3 | #2 integrated | [#19](https://github.com/ZempTime/shortbread/issues/19) | Integrated by [#57](https://github.com/ZempTime/shortbread/pull/57) at `45db8bd`; reviewed candidate `21a08c9` |
+| U02 | #4 | U01 | [#20](https://github.com/ZempTime/shortbread/issues/20) | `ready-for-agent` frontier |
 | U03 | #12 | U02 | [#21](https://github.com/ZempTime/shortbread/issues/21) | Blocked |
 | U04 | #13 | U03 | [#22](https://github.com/ZempTime/shortbread/issues/22) | Blocked |
 | U05 | #4 | U02 | [#23](https://github.com/ZempTime/shortbread/issues/23) | Blocked |
@@ -42,6 +42,14 @@ Stage 05 was published and promoted on 2026-07-20. GitHub #19–#56 are the exec
 | U36 | #16 | U35 | [#54](https://github.com/ZempTime/shortbread/issues/54) | Blocked |
 | U37 | #14, #17 | U20, U27, U30, U32, U34, U36 | [#55](https://github.com/ZempTime/shortbread/issues/55) | Blocked |
 | U38 | #17 | U37 | [#56](https://github.com/ZempTime/shortbread/issues/56) | Blocked |
+
+## U01 Integration Evidence
+
+- Preserved `ticket-3-releases-rollback@f5943d7` was reviewed at fixed SHA as source evidence and was never merged.
+- Behavioral TDD began at red checkpoint `09c9bac`; fixed candidate `21a08c9` passed 132 Rails tests / 1,334 assertions, all Go tests, lint, typecheck, build, security, licenses, bootstrap, and the real CLI/browser Release tracer.
+- A detached clean checkout rebuilt its database from migrations and replayed the full tests, tracer, and bootstrap successfully.
+- Independent Standards + Spec and data-integrity specialist reviews both approved exact candidate `21a08c9` with no blockers or should-fix findings.
+- [PR #57](https://github.com/ZempTime/shortbread/pull/57) merged as `45db8bd`; [U01/#19](https://github.com/ZempTime/shortbread/issues/19) closed. No reusable harvest.
 
 ## Promotion Rule
 
