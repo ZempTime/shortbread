@@ -88,4 +88,55 @@ class ProductionRuntimeTest < ActiveSupport::TestCase
       refute_includes error.message, database_url
     end
   end
+
+  test "database separation canonicalizes percent-encoded PostgreSQL database names" do
+    environment = VALID_ENVIRONMENT.merge(
+      "DATABASE_URL" => "postgresql://primary:secret@postgres/shortbread",
+      "QUEUE_DATABASE_URL" => "postgresql://queue:other@postgres/%73hortbread"
+    )
+
+    error = assert_raises(Shortbread::ProductionRuntime::InvalidConfiguration) do
+      Shortbread::ProductionRuntime.new(environment).validate!
+    end
+
+    assert_includes error.message, "DATABASE_URL and QUEUE_DATABASE_URL must select distinct databases"
+    environment.values_at("DATABASE_URL", "QUEUE_DATABASE_URL").each do |database_url|
+      refute_includes error.message, database_url
+    end
+  end
+
+  test "database separation uses effective PostgreSQL query connection identity" do
+    aliases = [
+      [ "postgresql://primary:secret@postgres/shortbread", "postgresql://queue:other@elsewhere/shortbread?host=postgres" ],
+      [ "postgresql://primary:secret@postgres:5432/shortbread", "postgresql://queue:other@postgres:15432/shortbread?port=5432" ],
+      [ "postgresql://primary:secret@postgres/shortbread", "postgresql://queue:other@postgres/elsewhere?database=shortbread" ],
+      [ "postgresql://primary:secret@postgres/shortbread?hostaddr=192.0.2.1", "postgresql://queue:other@elsewhere/shortbread?hostaddr=192.0.2.1" ]
+    ]
+
+    aliases.each do |primary_url, queue_url|
+      environment = VALID_ENVIRONMENT.merge("DATABASE_URL" => primary_url, "QUEUE_DATABASE_URL" => queue_url)
+
+      error = assert_raises(Shortbread::ProductionRuntime::InvalidConfiguration) do
+        Shortbread::ProductionRuntime.new(environment).validate!
+      end
+
+      assert_includes error.message, "DATABASE_URL and QUEUE_DATABASE_URL must select distinct databases"
+      environment.values_at("DATABASE_URL", "QUEUE_DATABASE_URL").each do |database_url|
+        refute_includes error.message, database_url
+      end
+    end
+  end
+
+  test "PostgreSQL URLs reject external identity sources" do
+    %w[dbname service].each do |parameter|
+      database_url = "postgresql://primary:secret@postgres/shortbread?#{parameter}=synthetic-override"
+
+      error = assert_raises(Shortbread::ProductionRuntime::InvalidConfiguration, parameter) do
+        Shortbread::ProductionRuntime.new(VALID_ENVIRONMENT.merge("DATABASE_URL" => database_url)).validate!
+      end
+
+      assert_includes error.message, "DATABASE_URL must be a PostgreSQL URL selecting a database", parameter
+      refute_includes error.message, database_url, parameter
+    end
+  end
 end

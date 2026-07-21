@@ -19,6 +19,7 @@ module Shortbread
     ].freeze
     SECRET_KEYS = %w[ANYCABLE_SECRET DATABASE_URL QUEUE_DATABASE_URL SECRET_KEY_BASE].freeze
     DEVELOPMENT_SECRETS = %w[anycable-local-secret shortbread-development-only].freeze
+    POSTGRESQL_EXTERNAL_IDENTITY_QUERY_KEYS = %w[dbname service].freeze
     HOST_PATTERN = /\A(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\z/
 
     class InvalidConfiguration < StandardError; end
@@ -87,7 +88,18 @@ module Shortbread
 
     def valid_postgresql_url?(key)
       uri = URI.parse(@environment.fetch(key))
-      %w[postgres postgresql].include?(uri.scheme) && uri.host && !uri.host.empty? && uri.path.to_s.match?(%r{\A/[^/]+\z})
+      database_path = decoded_database_path(uri)
+      options = postgresql_query_options(uri)
+      identity = database_identity_from(uri, options)
+      %w[postgres postgresql].include?(uri.scheme) &&
+        uri.host && !uri.host.empty? &&
+        database_path.match?(%r{\A/[^/]+\z}) &&
+        identity[0] && !identity[0].empty? &&
+        identity[1].between?(1, 65_535) &&
+        identity[2] && !identity[2].empty? &&
+        (POSTGRESQL_EXTERNAL_IDENTITY_QUERY_KEYS & options.keys).empty?
+    rescue ArgumentError
+      false
     end
 
     def distinct_databases?
@@ -96,7 +108,29 @@ module Shortbread
 
     def database_identity(key)
       uri = URI.parse(@environment.fetch(key))
-      [ uri.host.to_s.downcase, uri.port || 5432, uri.path ]
+      database_identity_from(uri, postgresql_query_options(uri))
+    rescue ArgumentError
+      [ nil, nil, nil ]
+    end
+
+    def database_identity_from(uri, options)
+      host = options["hostaddr"]
+      host = options.fetch("host", uri.host.to_s) if host.to_s.empty?
+      port = options.fetch("port", uri.port || 5432)
+      database = options.fetch("database", decoded_database_path(uri).delete_prefix("/"))
+
+      [ host.to_s.downcase, Integer(port.to_s, 10), database ]
+    end
+
+    def decoded_database_path(uri)
+      URI::DEFAULT_PARSER.unescape(uri.path.to_s)
+    end
+
+    def postgresql_query_options(uri)
+      uri.query.to_s.split("&").filter_map do |pair|
+        name, value = pair.split("=", 2)
+        [ name, URI::DEFAULT_PARSER.unescape(value.to_s) ] unless name.to_s.empty?
+      end.to_h
     end
   end
 end
