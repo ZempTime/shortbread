@@ -231,125 +231,6 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: api_idempotency_records; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.api_idempotency_records (
-    id bigint NOT NULL,
-    api_token_id bigint NOT NULL,
-    operation character varying(64) NOT NULL,
-    key_digest character varying(64) NOT NULL,
-    request_fingerprint character varying(64) NOT NULL,
-    response_status integer NOT NULL,
-    response_body jsonb NOT NULL,
-    expires_at timestamp(6) without time zone NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT api_idempotency_records_digest_format CHECK ((((key_digest)::text ~ '^[0-9a-f]{64}$'::text) AND ((request_fingerprint)::text ~ '^[0-9a-f]{64}$'::text))),
-    CONSTRAINT api_idempotency_records_response_status CHECK (((response_status >= 200) AND (response_status <= 599))),
-    CONSTRAINT api_idempotency_records_safe_operation CHECK (((operation)::text = ANY ((ARRAY['sites:create'::character varying, 'people:create'::character varying, 'grants:create'::character varying, 'invitations:create'::character varying, 'releases:rollback'::character varying])::text[])))
-);
-
-
---
--- Name: api_idempotency_records_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.api_idempotency_records_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: api_idempotency_records_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.api_idempotency_records_id_seq OWNED BY public.api_idempotency_records.id;
-
-
---
--- Name: api_rate_limit_buckets; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.api_rate_limit_buckets (
-    id bigint NOT NULL,
-    identity_digest character varying(64) NOT NULL,
-    route_key character varying(100) NOT NULL,
-    bucket_started_at timestamp(6) without time zone NOT NULL,
-    request_count integer DEFAULT 0 NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT api_rate_limit_buckets_identity_digest_format CHECK (((identity_digest)::text ~ '^[0-9a-f]{64}$'::text)),
-    CONSTRAINT api_rate_limit_buckets_request_count_nonnegative CHECK ((request_count >= 0))
-);
-
-
---
--- Name: api_rate_limit_buckets_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.api_rate_limit_buckets_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: api_rate_limit_buckets_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.api_rate_limit_buckets_id_seq OWNED BY public.api_rate_limit_buckets.id;
-
-
---
--- Name: api_tokens; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.api_tokens (
-    id bigint NOT NULL,
-    owner_id bigint NOT NULL,
-    token_digest character varying(64) NOT NULL,
-    token_hint character varying(16) NOT NULL,
-    kind character varying NOT NULL,
-    label character varying NOT NULL,
-    scopes jsonb NOT NULL,
-    expires_at timestamp(6) without time zone,
-    last_used_at timestamp(6) without time zone,
-    revoked_at timestamp(6) without time zone,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT api_tokens_display_fields_length CHECK ((((octet_length((label)::text) >= 1) AND (octet_length((label)::text) <= 100)) AND ((octet_length((token_hint)::text) >= 4) AND (octet_length((token_hint)::text) <= 16)))),
-    CONSTRAINT api_tokens_kind CHECK (((kind)::text = ANY ((ARRAY['interactive'::character varying, 'automation'::character varying])::text[]))),
-    CONSTRAINT api_tokens_scopes_array CHECK (((jsonb_typeof(scopes) = 'array'::text) AND (scopes <@ '["access:read", "access:write", "feedback:read", "invitations:read", "invitations:write", "people:read", "people:write", "publish:write", "receipts:read", "releases:read", "releases:rollback", "sites:read", "sites:write"]'::jsonb) AND ((jsonb_array_length(scopes) >= 1) AND (jsonb_array_length(scopes) <= 13)))),
-    CONSTRAINT api_tokens_token_digest_format CHECK (((token_digest)::text ~ '^[0-9a-f]{64}$'::text))
-);
-
-
---
--- Name: api_tokens_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.api_tokens_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: api_tokens_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.api_tokens_id_seq OWNED BY public.api_tokens.id;
-
-
---
 -- Name: ar_internal_metadata; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -367,10 +248,10 @@ CREATE TABLE public.ar_internal_metadata (
 
 CREATE TABLE public.blobs (
     id bigint NOT NULL,
-    byte_size bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
     sha256 character varying(64) NOT NULL,
+    byte_size bigint NOT NULL,
     storage_key character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT blobs_byte_size_nonnegative CHECK ((byte_size >= 0)),
     CONSTRAINT blobs_sha256_format CHECK (((sha256)::text ~ '^[0-9a-f]{64}$'::text))
@@ -397,64 +278,16 @@ ALTER SEQUENCE public.blobs_id_seq OWNED BY public.blobs.id;
 
 
 --
--- Name: device_authorizations; Type: TABLE; Schema: public; Owner: -
---
-
-CREATE TABLE public.device_authorizations (
-    id bigint NOT NULL,
-    owner_id bigint,
-    api_token_id bigint,
-    device_code_digest character varying(64) NOT NULL,
-    user_code_digest character varying(64) NOT NULL,
-    proof_challenge character varying(43) NOT NULL,
-    profile_name character varying(64) NOT NULL,
-    scopes jsonb NOT NULL,
-    state character varying DEFAULT 'pending'::character varying NOT NULL,
-    expires_at timestamp(6) without time zone NOT NULL,
-    approved_at timestamp(6) without time zone,
-    redeemed_at timestamp(6) without time zone,
-    denied_at timestamp(6) without time zone,
-    created_at timestamp(6) without time zone NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT device_authorizations_digest_format CHECK ((((device_code_digest)::text ~ '^[0-9a-f]{64}$'::text) AND ((user_code_digest)::text ~ '^[0-9a-f]{64}$'::text))),
-    CONSTRAINT device_authorizations_profile_name_format CHECK (((profile_name)::text ~ '^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'::text)),
-    CONSTRAINT device_authorizations_proof_challenge_format CHECK (((proof_challenge)::text ~ '^[A-Za-z0-9_-]{43}$'::text)),
-    CONSTRAINT device_authorizations_scopes_array CHECK (((jsonb_typeof(scopes) = 'array'::text) AND (scopes <@ '["access:read", "access:write", "feedback:read", "invitations:read", "invitations:write", "people:read", "people:write", "publish:write", "receipts:read", "releases:read", "releases:rollback", "sites:read", "sites:write"]'::jsonb) AND ((jsonb_array_length(scopes) >= 1) AND (jsonb_array_length(scopes) <= 13)))),
-    CONSTRAINT device_authorizations_state CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'approved'::character varying, 'redeemed'::character varying, 'denied'::character varying])::text[]))),
-    CONSTRAINT device_authorizations_state_shape CHECK (((((state)::text = 'pending'::text) AND (owner_id IS NULL) AND (api_token_id IS NULL) AND (approved_at IS NULL) AND (redeemed_at IS NULL) AND (denied_at IS NULL)) OR (((state)::text = 'approved'::text) AND (owner_id IS NOT NULL) AND (api_token_id IS NULL) AND (approved_at IS NOT NULL) AND (redeemed_at IS NULL) AND (denied_at IS NULL)) OR (((state)::text = 'redeemed'::text) AND (owner_id IS NOT NULL) AND (api_token_id IS NOT NULL) AND (approved_at IS NOT NULL) AND (redeemed_at IS NOT NULL) AND (denied_at IS NULL)) OR (((state)::text = 'denied'::text) AND (api_token_id IS NULL) AND (redeemed_at IS NULL) AND (denied_at IS NOT NULL))))
-);
-
-
---
--- Name: device_authorizations_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE public.device_authorizations_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: device_authorizations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE public.device_authorizations_id_seq OWNED BY public.device_authorizations.id;
-
-
---
 -- Name: grants; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE public.grants (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    offline_allowed boolean DEFAULT false NOT NULL,
-    person_id bigint NOT NULL,
-    revoked_at timestamp(6) without time zone,
     site_id bigint NOT NULL,
+    person_id bigint NOT NULL,
+    offline_allowed boolean DEFAULT false NOT NULL,
+    revoked_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -484,13 +317,13 @@ ALTER SEQUENCE public.grants_id_seq OWNED BY public.grants.id;
 
 CREATE TABLE public.invitations (
     id bigint NOT NULL,
-    accepted_at timestamp(6) without time zone,
-    created_at timestamp(6) without time zone NOT NULL,
-    expires_at timestamp(6) without time zone NOT NULL,
     grant_id bigint NOT NULL,
     locator character varying NOT NULL,
-    revoked_at timestamp(6) without time zone,
     secret_digest character varying(64) NOT NULL,
+    expires_at timestamp(6) without time zone NOT NULL,
+    accepted_at timestamp(6) without time zone,
+    revoked_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT invitations_secret_digest_format CHECK (((secret_digest)::text ~ '^[0-9a-f]{64}$'::text))
 );
@@ -521,16 +354,16 @@ ALTER SEQUENCE public.invitations_id_seq OWNED BY public.invitations.id;
 
 CREATE TABLE public.manifest_entries (
     id bigint NOT NULL,
+    release_id bigint NOT NULL,
     blob_id bigint NOT NULL,
+    path character varying NOT NULL,
     byte_size bigint NOT NULL,
     content_type character varying NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
     offline_policy character varying NOT NULL,
-    path character varying NOT NULL,
-    release_id bigint NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT manifest_entries_byte_size_nonnegative CHECK ((byte_size >= 0)),
-    CONSTRAINT manifest_entries_offline_policy CHECK (((offline_policy)::text = ANY (ARRAY[('required'::character varying)::text, ('optional'::character varying)::text, ('download'::character varying)::text])))
+    CONSTRAINT manifest_entries_offline_policy CHECK (((offline_policy)::text = ANY ((ARRAY['required'::character varying, 'optional'::character varying, 'download'::character varying])::text[])))
 );
 
 
@@ -559,7 +392,6 @@ ALTER SEQUENCE public.manifest_entries_id_seq OWNED BY public.manifest_entries.i
 
 CREATE TABLE public.owner_ceremonies (
     id bigint NOT NULL,
-    owner_id bigint,
     purpose character varying NOT NULL,
     authority character varying NOT NULL,
     secret_digest character varying(64) NOT NULL,
@@ -570,10 +402,10 @@ CREATE TABLE public.owner_ceremonies (
     consumed_at timestamp(6) without time zone,
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
-    CONSTRAINT owner_ceremonies_authority CHECK (((authority)::text = ANY ((ARRAY['deployment'::character varying, 'owner_session'::character varying])::text[]))),
-    CONSTRAINT owner_ceremonies_authority_shape CHECK (((((purpose)::text = 'bootstrap'::text) AND (owner_id IS NULL) AND ((authority)::text = 'deployment'::text)) OR (((purpose)::text = 'recovery'::text) AND (owner_id IS NOT NULL) AND ((authority)::text = 'deployment'::text)) OR (((purpose)::text = 'registration'::text) AND (owner_id IS NOT NULL) AND ((authority)::text = 'owner_session'::text)))),
+    CONSTRAINT owner_ceremonies_authority CHECK (((authority)::text = 'deployment'::text)),
+    CONSTRAINT owner_ceremonies_authority_shape CHECK ((((purpose)::text = 'bootstrap'::text) AND ((authority)::text = 'deployment'::text))),
     CONSTRAINT owner_ceremonies_challenge_length CHECK (((challenge IS NULL) OR ((octet_length((challenge)::text) >= 16) AND (octet_length((challenge)::text) <= 512)))),
-    CONSTRAINT owner_ceremonies_purpose CHECK (((purpose)::text = ANY ((ARRAY['bootstrap'::character varying, 'recovery'::character varying, 'registration'::character varying])::text[]))),
+    CONSTRAINT owner_ceremonies_purpose CHECK (((purpose)::text = 'bootstrap'::text)),
     CONSTRAINT owner_ceremonies_secret_digest_format CHECK (((secret_digest)::text ~ '^[0-9a-f]{64}$'::text)),
     CONSTRAINT owner_ceremonies_webauthn_shape CHECK ((((challenge IS NULL) AND (origin IS NULL) AND (rp_id IS NULL)) OR ((challenge IS NOT NULL) AND (origin IS NOT NULL) AND (rp_id IS NOT NULL))))
 );
@@ -615,7 +447,7 @@ CREATE TABLE public.owner_credentials (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT owner_credentials_label_length CHECK (((octet_length((label)::text) >= 1) AND (octet_length((label)::text) <= 100))),
-    CONSTRAINT owner_credentials_material_length CHECK ((((octet_length(credential_id) >= 1) AND (octet_length(credential_id) <= 1024)) AND ((octet_length(public_key) >= 1) AND (octet_length(public_key) <= 16384)))),
+    CONSTRAINT owner_credentials_material_length CHECK ((((octet_length(credential_id) >= 1) AND (octet_length(credential_id) <= 1366)) AND ((octet_length(public_key) >= 1) AND (octet_length(public_key) <= 16384)))),
     CONSTRAINT owner_credentials_sign_count_nonnegative CHECK ((sign_count >= 0)),
     CONSTRAINT owner_credentials_transports_array CHECK (((jsonb_typeof(transports) = 'array'::text) AND (transports <@ '["ble", "hybrid", "internal", "nfc", "smart-card", "usb"]'::jsonb) AND (jsonb_array_length(transports) <= 6)))
 );
@@ -680,8 +512,8 @@ ALTER SEQUENCE public.owners_id_seq OWNED BY public.owners.id;
 
 CREATE TABLE public.people (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
     first_name character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL
 );
 
@@ -711,20 +543,20 @@ ALTER SEQUENCE public.people_id_seq OWNED BY public.people.id;
 
 CREATE TABLE public.publish_plans (
     id bigint NOT NULL,
+    site_id bigint NOT NULL,
     base_release_id bigint,
-    created_at timestamp(6) without time zone NOT NULL,
+    release_id bigint,
+    idempotency_key_digest character varying(64) NOT NULL,
+    manifest_sha256 character varying(64) NOT NULL,
+    manifest jsonb NOT NULL,
+    state character varying NOT NULL,
     expires_at timestamp(6) without time zone NOT NULL,
     finalized_at timestamp(6) without time zone,
-    idempotency_key_digest character varying(64) NOT NULL,
-    manifest jsonb NOT NULL,
-    manifest_sha256 character varying(64) NOT NULL,
-    release_id bigint,
-    site_id bigint NOT NULL,
-    state character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT publish_plans_idempotency_key_digest_format CHECK (((idempotency_key_digest)::text ~ '^[0-9a-f]{64}$'::text)),
     CONSTRAINT publish_plans_manifest_sha256_format CHECK (((manifest_sha256)::text ~ '^[0-9a-f]{64}$'::text)),
-    CONSTRAINT publish_plans_state CHECK (((state)::text = ANY (ARRAY[('open'::character varying)::text, ('finalized'::character varying)::text])))
+    CONSTRAINT publish_plans_state CHECK (((state)::text = ANY ((ARRAY['open'::character varying, 'finalized'::character varying])::text[])))
 );
 
 
@@ -788,11 +620,11 @@ ALTER SEQUENCE public.release_rollbacks_id_seq OWNED BY public.release_rollbacks
 
 CREATE TABLE public.releases (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    finalized_at timestamp(6) without time zone,
-    manifest_sha256 character varying(64) NOT NULL,
-    number bigint NOT NULL,
     site_id bigint NOT NULL,
+    number bigint NOT NULL,
+    manifest_sha256 character varying(64) NOT NULL,
+    finalized_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT releases_manifest_sha256_format CHECK (((manifest_sha256)::text ~ '^[0-9a-f]{64}$'::text)),
     CONSTRAINT releases_number_positive CHECK ((number > 0))
@@ -833,13 +665,13 @@ CREATE TABLE public.schema_migrations (
 
 CREATE TABLE public.site_handoffs (
     id bigint NOT NULL,
-    audience character varying NOT NULL,
-    consumed_at timestamp(6) without time zone,
-    created_at timestamp(6) without time zone NOT NULL,
-    expires_at timestamp(6) without time zone NOT NULL,
     grant_id bigint NOT NULL,
     invitation_id bigint NOT NULL,
+    audience character varying NOT NULL,
     nonce_digest character varying(64) NOT NULL,
+    expires_at timestamp(6) without time zone NOT NULL,
+    consumed_at timestamp(6) without time zone,
+    created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT site_handoffs_nonce_digest_format CHECK (((nonce_digest)::text ~ '^[0-9a-f]{64}$'::text))
 );
@@ -870,11 +702,11 @@ ALTER SEQUENCE public.site_handoffs_id_seq OWNED BY public.site_handoffs.id;
 
 CREATE TABLE public.sites (
     id bigint NOT NULL,
-    created_at timestamp(6) without time zone NOT NULL,
-    current_release_id bigint,
-    name character varying NOT NULL,
     slug character varying NOT NULL,
-    updated_at timestamp(6) without time zone NOT NULL
+    name character varying NOT NULL,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    current_release_id bigint
 );
 
 
@@ -898,38 +730,10 @@ ALTER SEQUENCE public.sites_id_seq OWNED BY public.sites.id;
 
 
 --
--- Name: api_idempotency_records id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.api_idempotency_records ALTER COLUMN id SET DEFAULT nextval('public.api_idempotency_records_id_seq'::regclass);
-
-
---
--- Name: api_rate_limit_buckets id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.api_rate_limit_buckets ALTER COLUMN id SET DEFAULT nextval('public.api_rate_limit_buckets_id_seq'::regclass);
-
-
---
--- Name: api_tokens id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.api_tokens ALTER COLUMN id SET DEFAULT nextval('public.api_tokens_id_seq'::regclass);
-
-
---
 -- Name: blobs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.blobs ALTER COLUMN id SET DEFAULT nextval('public.blobs_id_seq'::regclass);
-
-
---
--- Name: device_authorizations id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.device_authorizations ALTER COLUMN id SET DEFAULT nextval('public.device_authorizations_id_seq'::regclass);
 
 
 --
@@ -1017,30 +821,6 @@ ALTER TABLE ONLY public.sites ALTER COLUMN id SET DEFAULT nextval('public.sites_
 
 
 --
--- Name: api_idempotency_records api_idempotency_records_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.api_idempotency_records
-    ADD CONSTRAINT api_idempotency_records_pkey PRIMARY KEY (id);
-
-
---
--- Name: api_rate_limit_buckets api_rate_limit_buckets_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.api_rate_limit_buckets
-    ADD CONSTRAINT api_rate_limit_buckets_pkey PRIMARY KEY (id);
-
-
---
--- Name: api_tokens api_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.api_tokens
-    ADD CONSTRAINT api_tokens_pkey PRIMARY KEY (id);
-
-
---
 -- Name: ar_internal_metadata ar_internal_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1054,14 +834,6 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 ALTER TABLE ONLY public.blobs
     ADD CONSTRAINT blobs_pkey PRIMARY KEY (id);
-
-
---
--- Name: device_authorizations device_authorizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.device_authorizations
-    ADD CONSTRAINT device_authorizations_pkey PRIMARY KEY (id);
 
 
 --
@@ -1169,41 +941,6 @@ ALTER TABLE ONLY public.sites
 
 
 --
--- Name: index_api_idempotency_records_on_api_token_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_api_idempotency_records_on_api_token_id ON public.api_idempotency_records USING btree (api_token_id);
-
-
---
--- Name: index_api_idempotency_records_on_api_token_id_and_key_digest; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_api_idempotency_records_on_api_token_id_and_key_digest ON public.api_idempotency_records USING btree (api_token_id, key_digest);
-
-
---
--- Name: index_api_rate_limit_buckets_on_identity_route_bucket; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_api_rate_limit_buckets_on_identity_route_bucket ON public.api_rate_limit_buckets USING btree (identity_digest, route_key, bucket_started_at);
-
-
---
--- Name: index_api_tokens_on_owner_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_api_tokens_on_owner_id ON public.api_tokens USING btree (owner_id);
-
-
---
--- Name: index_api_tokens_on_token_digest; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_api_tokens_on_token_digest ON public.api_tokens USING btree (token_digest);
-
-
---
 -- Name: index_blobs_on_sha256; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -1215,34 +952,6 @@ CREATE UNIQUE INDEX index_blobs_on_sha256 ON public.blobs USING btree (sha256);
 --
 
 CREATE UNIQUE INDEX index_blobs_on_storage_key ON public.blobs USING btree (storage_key);
-
-
---
--- Name: index_device_authorizations_on_api_token_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_device_authorizations_on_api_token_id ON public.device_authorizations USING btree (api_token_id);
-
-
---
--- Name: index_device_authorizations_on_device_code_digest; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_device_authorizations_on_device_code_digest ON public.device_authorizations USING btree (device_code_digest);
-
-
---
--- Name: index_device_authorizations_on_owner_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_device_authorizations_on_owner_id ON public.device_authorizations USING btree (owner_id);
-
-
---
--- Name: index_device_authorizations_on_user_code_digest; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE UNIQUE INDEX index_device_authorizations_on_user_code_digest ON public.device_authorizations USING btree (user_code_digest);
 
 
 --
@@ -1306,13 +1015,6 @@ CREATE INDEX index_manifest_entries_on_release_id ON public.manifest_entries USI
 --
 
 CREATE UNIQUE INDEX index_manifest_entries_on_release_id_and_path ON public.manifest_entries USING btree (release_id, path);
-
-
---
--- Name: index_owner_ceremonies_on_owner_id; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX index_owner_ceremonies_on_owner_id ON public.owner_ceremonies USING btree (owner_id);
 
 
 --
@@ -1561,27 +1263,11 @@ ALTER TABLE ONLY public.publish_plans
 
 
 --
--- Name: api_tokens fk_rails_3ae0f0ee04; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.api_tokens
-    ADD CONSTRAINT fk_rails_3ae0f0ee04 FOREIGN KEY (owner_id) REFERENCES public.owners(id);
-
-
---
 -- Name: grants fk_rails_54cb50c22d; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.grants
     ADD CONSTRAINT fk_rails_54cb50c22d FOREIGN KEY (site_id) REFERENCES public.sites(id);
-
-
---
--- Name: device_authorizations fk_rails_576e920022; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.device_authorizations
-    ADD CONSTRAINT fk_rails_576e920022 FOREIGN KEY (api_token_id) REFERENCES public.api_tokens(id);
 
 
 --
@@ -1617,22 +1303,6 @@ ALTER TABLE ONLY public.publish_plans
 
 
 --
--- Name: device_authorizations fk_rails_a143157009; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.device_authorizations
-    ADD CONSTRAINT fk_rails_a143157009 FOREIGN KEY (owner_id) REFERENCES public.owners(id);
-
-
---
--- Name: owner_ceremonies fk_rails_d1f5697d33; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.owner_ceremonies
-    ADD CONSTRAINT fk_rails_d1f5697d33 FOREIGN KEY (owner_id) REFERENCES public.owners(id);
-
-
---
 -- Name: grants fk_rails_db257b513b; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1646,14 +1316,6 @@ ALTER TABLE ONLY public.grants
 
 ALTER TABLE ONLY public.publish_plans
     ADD CONSTRAINT fk_rails_e422d69063 FOREIGN KEY (base_release_id) REFERENCES public.releases(id);
-
-
---
--- Name: api_idempotency_records fk_rails_e967afb05d; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY public.api_idempotency_records
-    ADD CONSTRAINT fk_rails_e967afb05d FOREIGN KEY (api_token_id) REFERENCES public.api_tokens(id);
 
 
 --

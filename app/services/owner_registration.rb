@@ -71,7 +71,11 @@ class OwnerRegistration
           name: "Owner",
           display_name: "Owner"
         },
-        authenticator_selection: { user_verification: "required" },
+        authenticator_selection: {
+          user_verification: "required",
+          resident_key: "required",
+          require_resident_key: true
+        },
         attestation: "none"
       )
       ceremony.update!(challenge: options.challenge, origin: webauthn.origin, rp_id: webauthn.rp_id)

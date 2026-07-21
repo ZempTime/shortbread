@@ -4,8 +4,8 @@ require "digest"
 
 class OwnerCeremony < ApplicationRecord
   BOOTSTRAP_LIFETIME = 10.minutes
-  PURPOSES = %w[bootstrap recovery registration].freeze
-  AUTHORITIES = %w[deployment owner_session].freeze
+  PURPOSES = %w[bootstrap].freeze
+  AUTHORITIES = %w[deployment].freeze
   DIGEST_FORMAT = /\A[0-9a-f]{64}\z/
   SECRET_FORMAT = /\A[A-Za-z0-9_-]{43}\z/
 
@@ -13,9 +13,7 @@ class OwnerCeremony < ApplicationRecord
     def initialize = super("Owner ceremony issuance rejected")
   end
 
-  belongs_to :owner, optional: true
-
-  attr_readonly :owner_id, :purpose, :authority, :secret_digest, :expires_at
+  attr_readonly :purpose, :authority, :secret_digest, :expires_at
 
   validates :purpose, inclusion: { in: PURPOSES }
   validates :authority, inclusion: { in: AUTHORITIES }
@@ -40,7 +38,6 @@ class OwnerCeremony < ApplicationRecord
   end
 
   def available_bootstrap?(now: Time.current)
-    purpose == "bootstrap" && authority == "deployment" && owner_id.nil? &&
-      consumed_at.nil? && expires_at > now
+    purpose == "bootstrap" && authority == "deployment" && consumed_at.nil? && expires_at > now
   end
 end

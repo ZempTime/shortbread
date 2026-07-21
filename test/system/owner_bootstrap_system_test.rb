@@ -56,6 +56,9 @@ class OwnerBootstrapSystemTest < ApplicationSystemTestCase
     assert_text "Owner landing"
     assert_equal 1, Owner.count
     assert_equal "Primary passkey", Owner.sole.owner_credentials.sole.label
+    browser_credential = @authenticator.credentials.sole
+    assert browser_credential.resident_credential?
+    assert_equal "localhost", browser_credential.rp_id
   end
 
   test "a rejected ceremony stays out of the URL and is cleared from the form" do

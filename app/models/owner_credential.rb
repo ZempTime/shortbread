@@ -1,13 +1,17 @@
 # frozen_string_literal: true
 
 class OwnerCredential < ApplicationRecord
+  ENCODED_CREDENTIAL_ID_MAXIMUM_BYTES = 1_366
   TRANSPORTS = %w[ble hybrid internal nfc smart-card usb].freeze
 
   belongs_to :owner
 
   attr_readonly :owner_id, :credential_id, :public_key
 
-  validates :credential_id, presence: true, uniqueness: true, length: { maximum: 1024 }
+  validates :credential_id,
+    presence: true,
+    uniqueness: true,
+    length: { maximum: ENCODED_CREDENTIAL_ID_MAXIMUM_BYTES }
   validates :public_key, presence: true, length: { maximum: 16_384 }
   validates :sign_count, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validates :label, presence: true, length: { maximum: 100 }

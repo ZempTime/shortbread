@@ -34,6 +34,8 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
       .at_css('meta[name="csrf-token"]')
       &.[]("content")
     assert_not_nil @csrf_token
+    @bootstrap_session_cookie = cookies["shortbread_apex"]
+    assert_not_nil @bootstrap_session_cookie
   end
 
   teardown do
@@ -120,6 +122,8 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
     assert_equal "Shortbread", public_key.dig("rp", "name")
     assert_equal "Owner", public_key.dig("user", "name")
     assert_equal "required", public_key.dig("authenticatorSelection", "userVerification")
+    assert_equal "required", public_key.dig("authenticatorSelection", "residentKey")
+    assert_equal true, public_key.dig("authenticatorSelection", "requireResidentKey")
     assert_equal 0, Owner.count
     assert_equal 0, table_count("owner_credentials")
 
@@ -289,6 +293,7 @@ class OwnerRegistrationTest < ActionDispatch::IntegrationTest
     assert_match(/(?:\A|\n)shortbread_apex=/, owner_cookie)
     assert_includes owner_cookie, "path=/"
     assert_includes owner_cookie.downcase, "httponly"
+    refute_equal @bootstrap_session_cookie, cookies["shortbread_apex"]
 
     get "/owner", headers: { "Host" => "localhost" }
 

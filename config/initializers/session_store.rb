@@ -1,12 +1,6 @@
 # frozen_string_literal: true
 
-secure = Rails.env.production?
-key = secure ? "__Host-shortbread_apex" : "shortbread_apex"
+require Rails.root.join("lib/shortbread/owner_session_cookie")
 
-Rails.application.config.session_store(
-  :cookie_store,
-  key:,
-  secure:,
-  httponly: true,
-  same_site: :lax
-)
+options = Shortbread::OwnerSessionCookie.options(production: Rails.env.production?)
+Rails.application.config.session_store(:cookie_store, **options)
