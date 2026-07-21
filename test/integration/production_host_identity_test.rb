@@ -67,10 +67,17 @@ class ProductionHostIdentityTest < ActiveSupport::TestCase
   test "production rejects a Site raw host forwarded as the apex before routes and static files" do
     stdout, stderr, status = Open3.capture3(
       {
+        "ANYCABLE_HTTP_BROADCAST_URL" => "http://cable.internal:8090/_broadcast",
+        "ANYCABLE_RPC_HOST" => "http://shortbread.example:3000/_anycable",
+        "ANYCABLE_SECRET" => "synthetic-production-anycable-secret-0123456789abcdef",
+        "ANYCABLE_WEBSOCKET_URL" => "wss://shortbread.example/cable",
+        "DATABASE_URL" => "postgresql://shortbread:synthetic@database/shortbread_production",
+        "QUEUE_DATABASE_URL" => "postgresql://shortbread:synthetic@database/shortbread_production_queue",
         "RAILS_ENV" => "production",
         "RAILS_LOG_LEVEL" => "fatal",
         "SECRET_KEY_BASE" => "synthetic-production-host-boundary-key-0123456789abcdef",
-        "SHORTBREAD_APEX_HOST" => "shortbread.example"
+        "SHORTBREAD_APEX_HOST" => "shortbread.example",
+        "SHORTBREAD_BLOB_ROOT" => "/var/lib/shortbread/blobs"
       },
       RbConfig.ruby,
       Rails.root.join("bin/rails").to_s,

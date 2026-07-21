@@ -12,5 +12,6 @@ test:
 
 production:
   <<: *default
-  websocket_url: ~
-  secret: ~
+  http_rpc: true
+  websocket_url: <%= ENV["ANYCABLE_WEBSOCKET_URL"] %>
+  secret: <%= ENV["ANYCABLE_SECRET"] %>

@@ -31,6 +31,8 @@ Rails.application.routes.draw do
   apex_host = ENV.fetch("SHORTBREAD_APEX_HOST", "localhost")
   constraints ->(request) { request.host == apex_host } do
     get "up" => "rails/health#show", as: :rails_health_check
+    get "health/live" => "rails/health#show"
+    get "health/ready" => "runtime_health_checks#ready"
   end
   get "up", to: ->(_environment) { Shortbread::RackResponses.not_found }
 end
