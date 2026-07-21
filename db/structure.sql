@@ -150,8 +150,13 @@ BEGIN
         AND plan.state = 'open'
         AND plan.site_id = OLD.site_id
         AND plan.manifest_sha256 = OLD.manifest_sha256
+        AND jsonb_typeof(plan.manifest->'entries') = 'array'
         AND jsonb_array_length(plan.manifest->'entries') = (
           SELECT COUNT(*) FROM manifest_entries WHERE release_id = OLD.id
+        )
+        AND jsonb_array_length(plan.manifest->'entries') = (
+          SELECT COUNT(DISTINCT expected->>'path')
+          FROM jsonb_array_elements(plan.manifest->'entries') expected
         )
         AND NOT EXISTS (
           SELECT 1
@@ -159,11 +164,12 @@ BEGIN
           LEFT JOIN manifest_entries entry
             ON entry.release_id = OLD.id AND entry.path = expected->>'path'
           LEFT JOIN blobs blob ON blob.id = entry.blob_id
-          WHERE entry.id IS NULL
-            OR blob.sha256 <> expected->>'sha256'
-            OR entry.byte_size <> (expected->>'size')::bigint
-            OR entry.content_type <> expected->>'content_type'
-            OR entry.offline_policy <> expected->>'offline_policy'
+          WHERE expected->>'path' IS NULL
+            OR entry.id IS NULL
+            OR blob.sha256 IS DISTINCT FROM expected->>'sha256'
+            OR entry.byte_size IS DISTINCT FROM (expected->>'size')::bigint
+            OR entry.content_type IS DISTINCT FROM expected->>'content_type'
+            OR entry.offline_policy IS DISTINCT FROM expected->>'offline_policy'
         )
     ) THEN
     RETURN NEW;
@@ -195,8 +201,16 @@ CREATE FUNCTION public.shortbread_require_finalized_current_release() RETURNS tr
     AS $$
 BEGIN
   IF NEW.current_release_id IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM releases
-    WHERE id = NEW.current_release_id AND site_id = NEW.id AND finalized_at IS NOT NULL
+    SELECT 1
+    FROM releases release
+    JOIN publish_plans plan ON plan.release_id = release.id
+    WHERE release.id = NEW.current_release_id
+      AND release.site_id = NEW.id
+      AND release.finalized_at IS NOT NULL
+      AND plan.site_id = NEW.id
+      AND plan.state = 'finalized'
+      AND plan.finalized_at IS NOT NULL
+      AND plan.manifest_sha256 = release.manifest_sha256
   ) THEN
     RAISE EXCEPTION 'A Site current pointer must select its finalized Release' USING ERRCODE = '23514';
   END IF;

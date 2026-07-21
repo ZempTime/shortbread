@@ -81,6 +81,82 @@ class ReleaseIntegrityTest < ActiveSupport::TestCase
     assert_nil site.reload.current_release_id
   end
 
+  test "PostgreSQL rejects finalization through malformed or duplicate Publish Plan entries" do
+    site = Site.create!(slug: "first-site", name: "First Site")
+    first_blob = Blob.create!(sha256: "a" * 64, byte_size: 1, storage_key: "a" * 64)
+    second_blob = Blob.create!(sha256: "b" * 64, byte_size: 1, storage_key: "b" * 64)
+
+    malformed_plan = site.publish_plans.create!(
+      idempotency_key_digest: "c" * 64,
+      manifest_sha256: "d" * 64,
+      manifest: { "entries" => [ { "path" => "index.html" } ] },
+      state: "open",
+      expires_at: 1.hour.from_now
+    )
+    malformed_release = site.releases.create!(number: 1, manifest_sha256: "d" * 64)
+    malformed_plan.update!(release: malformed_release)
+    malformed_release.manifest_entries.create!(
+      blob: first_blob, path: "index.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
+    )
+
+    assert_database_rejects(ActiveRecord::StatementInvalid) do
+      malformed_release.update!(finalized_at: Time.current)
+    end
+
+    duplicate_entry = {
+      "path" => "index.html", "sha256" => first_blob.sha256, "size" => 1,
+      "content_type" => "text/html", "offline_policy" => "required"
+    }
+    duplicate_plan = site.publish_plans.create!(
+      idempotency_key_digest: "e" * 64,
+      manifest_sha256: "f" * 64,
+      manifest: { "entries" => [ duplicate_entry, duplicate_entry ] },
+      state: "open",
+      expires_at: 1.hour.from_now
+    )
+    duplicate_release = site.releases.create!(number: 2, manifest_sha256: "f" * 64)
+    duplicate_plan.update!(release: duplicate_release)
+    duplicate_release.manifest_entries.create!(
+      blob: first_blob, path: "index.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
+    )
+    duplicate_release.manifest_entries.create!(
+      blob: second_blob, path: "extra.txt", byte_size: 1, content_type: "text/plain", offline_policy: "download"
+    )
+
+    assert_database_rejects(ActiveRecord::StatementInvalid) do
+      duplicate_release.update!(finalized_at: Time.current)
+    end
+  end
+
+  test "PostgreSQL rejects exposing a finalized Release while its Publish Plan remains open" do
+    site = Site.create!(slug: "first-site", name: "First Site")
+    blob = Blob.create!(sha256: "a" * 64, byte_size: 1, storage_key: "a" * 64)
+    entry = {
+      "path" => "index.html", "sha256" => blob.sha256, "size" => 1,
+      "content_type" => "text/html", "offline_policy" => "required"
+    }
+    plan = site.publish_plans.create!(
+      idempotency_key_digest: "c" * 64,
+      manifest_sha256: "d" * 64,
+      manifest: { "entries" => [ entry ] },
+      state: "open",
+      expires_at: 1.hour.from_now
+    )
+    release = site.releases.create!(number: 1, manifest_sha256: "d" * 64)
+    plan.update!(release:)
+    release.manifest_entries.create!(
+      blob:, path: "index.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
+    )
+    release.update!(finalized_at: Time.current)
+
+    assert_database_rejects(ActiveRecord::StatementInvalid) do
+      site.update!(current_release: release)
+    end
+
+    assert_nil site.reload.current_release_id
+    assert_predicate plan.reload, :open?
+  end
+
   test "PostgreSQL retains finalized publish and rollback idempotency rows" do
     site = Site.create!(slug: "first-site", name: "First Site")
     first = assemble_release(site:, number: 1, manifest_sha256: "a" * 64, finalized_at: 2.minutes.ago)

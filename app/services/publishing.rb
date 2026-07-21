@@ -84,8 +84,8 @@ module Publishing
           )
         end
         release.update!(finalized_at: now)
-        site.update!(current_release: release)
         publish_plan.update!(state: "finalized", finalized_at: now)
+        site.update!(current_release: release)
         FinalizeResult.new(release:, created: true)
       end
     end
