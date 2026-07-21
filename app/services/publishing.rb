@@ -46,14 +46,6 @@ module Publishing
   end
 
   def finalize(publish_plan:, blob_store:, now: Time.current)
-    publish_plan.reload
-    return FinalizeResult.new(release: publish_plan.release, created: false) if publish_plan.release_id
-
-    raise PublishPlanExpired unless publish_plan.open? && publish_plan.expires_at > now
-
-    entries = publish_plan.manifest.fetch("entries")
-    blobs = preflight_blobs(entries:, blob_store:)
-
     PublishPlan.transaction do
       publish_plan.lock!
       if publish_plan.release_id
@@ -61,13 +53,18 @@ module Publishing
       else
         raise PublishPlanExpired unless publish_plan.open? && publish_plan.expires_at > now
 
+        entries = publish_plan.manifest.fetch("entries")
+        manifest = Manifest.build(entries:)
+        raise InvalidManifest unless manifest.sha256 == publish_plan.manifest_sha256
+
+        blobs = preflight_blobs(entries:, blob_store:)
+
         site = Site.lock.find(publish_plan.site_id)
         raise StalePublishPlan unless site.current_release_id == publish_plan.base_release_id
 
         release = site.releases.create!(
           number: site.releases.maximum(:number).to_i + 1,
-          manifest_sha256: publish_plan.manifest_sha256,
-          finalized_at: now
+          manifest_sha256: publish_plan.manifest_sha256
         )
         entries.each do |entry|
           ManifestEntry.create!(
@@ -79,6 +76,7 @@ module Publishing
             offline_policy: entry.fetch("offline_policy")
           )
         end
+        release.update!(finalized_at: now)
         site.update!(current_release: release)
         publish_plan.update!(release:, state: "finalized", finalized_at: now)
         FinalizeResult.new(release:, created: true)

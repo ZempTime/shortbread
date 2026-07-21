@@ -53,7 +53,7 @@ func TestClientPlansOneFilePublishWithoutSendingLocalPathOrBody(t *testing.T) {
 		}
 		response.Header().Set("Content-Type", "application/json")
 		response.WriteHeader(http.StatusCreated)
-		_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","uploads":[{"sha256":"`+digest+`","size":31,"method":"PUT","url":"/api/v1/publish-plans/19/blobs/`+digest+`","headers":{"Content-Type":"application/octet-stream"}}],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
+		_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","delta":{"added":1,"changed":0,"reused":0,"removed":0},"uploads":[{"sha256":"`+digest+`","size":31,"method":"PUT","url":"/api/v1/publish-plans/19/blobs/`+digest+`","headers":{"Content-Type":"application/octet-stream"}}],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
 	}))
 	defer server.Close()
 
@@ -157,7 +157,7 @@ func TestClientAllowsDigitLeadingSiteSlugsWhenPlanning(t *testing.T) {
 		}
 		response.Header().Set("Content-Type", "application/json")
 		response.WriteHeader(http.StatusCreated)
-		_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","uploads":[],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
+		_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","delta":{"added":0,"changed":0,"reused":1,"removed":0},"uploads":[],"finalize_url":"/api/v1/publish-plans/19/finalize"}}`)
 	}))
 	defer server.Close()
 	client, err := api.New(server.URL, testEnvironment("synthetic-test-bearer"))
@@ -205,7 +205,7 @@ func TestClientRejectsAnUnexpectedRelativeUploadTargetInThePlan(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
 		response.Header().Set("Content-Type", "application/json")
 		response.WriteHeader(http.StatusCreated)
-		_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","uploads":[{"sha256":"`+digest+`","size":1,"method":"PUT","url":"/api/v1/people","headers":{"Content-Type":"application/octet-stream"}}],"finalize_url":"/api/v1/publish-plans/19/finalize"},"private":"RESPONSE_MARKER"}`)
+		_, _ = io.WriteString(response, `{"publish_plan":{"id":19,"state":"open","delta":{"added":1,"changed":0,"reused":0,"removed":0},"uploads":[{"sha256":"`+digest+`","size":1,"method":"PUT","url":"/api/v1/people","headers":{"Content-Type":"application/octet-stream"}}],"finalize_url":"/api/v1/publish-plans/19/finalize"},"private":"RESPONSE_MARKER"}`)
 	}))
 	defer server.Close()
 	client, err := api.New(server.URL, testEnvironment("synthetic-test-bearer"))

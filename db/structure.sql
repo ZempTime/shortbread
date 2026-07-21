@@ -36,15 +36,108 @@ $$;
 
 
 --
--- Name: shortbread_reject_immutable_row_update(); Type: FUNCTION; Schema: public; Owner: -
+-- Name: shortbread_guard_manifest_entry_membership(); Type: FUNCTION; Schema: public; Owner: -
 --
 
-CREATE FUNCTION public.shortbread_reject_immutable_row_update() RETURNS trigger
+CREATE FUNCTION public.shortbread_guard_manifest_entry_membership() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  parent_finalized_at timestamp(6);
+BEGIN
+  IF TG_OP <> 'INSERT' THEN
+    RAISE EXCEPTION 'Shortbread immutable Manifest Entry rows cannot be changed' USING ERRCODE = '55000';
+  END IF;
+  SELECT finalized_at INTO parent_finalized_at FROM releases WHERE id = NEW.release_id;
+  IF parent_finalized_at IS NOT NULL THEN
+    RAISE EXCEPTION 'Manifest Entries cannot be added to a finalized Release' USING ERRCODE = '55000';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: shortbread_guard_publish_plan_lifecycle(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.shortbread_guard_publish_plan_lifecycle() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  RAISE EXCEPTION 'Shortbread immutable % rows cannot be updated', TG_TABLE_NAME
-    USING ERRCODE = '55000';
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'Publish Plan idempotency rows cannot be deleted' USING ERRCODE = '55000';
+  END IF;
+  IF OLD.state = 'open'
+    AND NEW.state = 'finalized'
+    AND OLD.release_id IS NULL
+    AND NEW.release_id IS NOT NULL
+    AND OLD.finalized_at IS NULL
+    AND NEW.finalized_at IS NOT NULL
+    AND OLD.site_id IS NOT DISTINCT FROM NEW.site_id
+    AND OLD.base_release_id IS NOT DISTINCT FROM NEW.base_release_id
+    AND OLD.idempotency_key_digest IS NOT DISTINCT FROM NEW.idempotency_key_digest
+    AND OLD.manifest_sha256 IS NOT DISTINCT FROM NEW.manifest_sha256
+    AND OLD.manifest IS NOT DISTINCT FROM NEW.manifest
+    AND OLD.expires_at IS NOT DISTINCT FROM NEW.expires_at THEN
+    RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'Publish Plan rows permit only exact finalization' USING ERRCODE = '55000';
+END;
+$$;
+
+
+--
+-- Name: shortbread_guard_release_lifecycle(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.shortbread_guard_release_lifecycle() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'Shortbread immutable Release rows cannot be deleted' USING ERRCODE = '55000';
+  END IF;
+  IF OLD.finalized_at IS NULL
+    AND NEW.finalized_at IS NOT NULL
+    AND OLD.site_id IS NOT DISTINCT FROM NEW.site_id
+    AND OLD.number IS NOT DISTINCT FROM NEW.number
+    AND OLD.manifest_sha256 IS NOT DISTINCT FROM NEW.manifest_sha256 THEN
+    RETURN NEW;
+  END IF;
+  RAISE EXCEPTION 'Shortbread immutable Release rows cannot be updated' USING ERRCODE = '55000';
+END;
+$$;
+
+
+--
+-- Name: shortbread_reject_immutable_row_change(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.shortbread_reject_immutable_row_change() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'Shortbread immutable % rows cannot be changed', TG_TABLE_NAME USING ERRCODE = '55000';
+END;
+$$;
+
+
+--
+-- Name: shortbread_require_finalized_current_release(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.shortbread_require_finalized_current_release() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.current_release_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1 FROM releases
+    WHERE id = NEW.current_release_id AND site_id = NEW.id AND finalized_at IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'A Site current pointer must select its finalized Release' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
 END;
 $$;
 
@@ -324,7 +417,7 @@ ALTER SEQUENCE public.release_rollbacks_id_seq OWNED BY public.release_rollbacks
 CREATE TABLE public.releases (
     id bigint NOT NULL,
     created_at timestamp(6) without time zone NOT NULL,
-    finalized_at timestamp(6) without time zone NOT NULL,
+    finalized_at timestamp(6) without time zone,
     manifest_sha256 character varying(64) NOT NULL,
     number bigint NOT NULL,
     site_id bigint NOT NULL,
@@ -788,24 +881,24 @@ CREATE UNIQUE INDEX index_sites_on_slug ON public.sites USING btree (slug);
 
 
 --
--- Name: manifest_entries shortbread_immutable_update; Type: TRIGGER; Schema: public; Owner: -
+-- Name: sites shortbread_finalized_current_release; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER shortbread_immutable_update BEFORE UPDATE ON public.manifest_entries FOR EACH ROW EXECUTE FUNCTION public.shortbread_reject_immutable_row_update();
-
-
---
--- Name: release_rollbacks shortbread_immutable_update; Type: TRIGGER; Schema: public; Owner: -
---
-
-CREATE TRIGGER shortbread_immutable_update BEFORE UPDATE ON public.release_rollbacks FOR EACH ROW EXECUTE FUNCTION public.shortbread_reject_immutable_row_update();
+CREATE TRIGGER shortbread_finalized_current_release BEFORE INSERT OR UPDATE OF current_release_id ON public.sites FOR EACH ROW EXECUTE FUNCTION public.shortbread_require_finalized_current_release();
 
 
 --
--- Name: releases shortbread_immutable_update; Type: TRIGGER; Schema: public; Owner: -
+-- Name: release_rollbacks shortbread_immutable_change; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER shortbread_immutable_update BEFORE UPDATE ON public.releases FOR EACH ROW EXECUTE FUNCTION public.shortbread_reject_immutable_row_update();
+CREATE TRIGGER shortbread_immutable_change BEFORE DELETE OR UPDATE ON public.release_rollbacks FOR EACH ROW EXECUTE FUNCTION public.shortbread_reject_immutable_row_change();
+
+
+--
+-- Name: manifest_entries shortbread_manifest_entry_membership; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER shortbread_manifest_entry_membership BEFORE INSERT OR DELETE OR UPDATE ON public.manifest_entries FOR EACH ROW EXECUTE FUNCTION public.shortbread_guard_manifest_entry_membership();
 
 
 --
@@ -813,6 +906,20 @@ CREATE TRIGGER shortbread_immutable_update BEFORE UPDATE ON public.releases FOR 
 --
 
 CREATE TRIGGER shortbread_monotonic_release_number BEFORE INSERT ON public.releases FOR EACH ROW EXECUTE FUNCTION public.shortbread_enforce_monotonic_release_number();
+
+
+--
+-- Name: publish_plans shortbread_publish_plan_lifecycle; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER shortbread_publish_plan_lifecycle BEFORE DELETE OR UPDATE ON public.publish_plans FOR EACH ROW EXECUTE FUNCTION public.shortbread_guard_publish_plan_lifecycle();
+
+
+--
+-- Name: releases shortbread_release_lifecycle; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER shortbread_release_lifecycle BEFORE DELETE OR UPDATE ON public.releases FOR EACH ROW EXECUTE FUNCTION public.shortbread_guard_release_lifecycle();
 
 
 --
@@ -966,6 +1073,7 @@ ALTER TABLE ONLY public.sites
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260720122000'),
 ('20260720121000'),
 ('20260719145000'),
 ('20260719144000'),

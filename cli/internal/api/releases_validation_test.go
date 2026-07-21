@@ -26,6 +26,22 @@ func TestReleaseClientRejectsInconsistentHistoryAndRollbackResults(t *testing.T)
 			},
 		},
 		{
+			name: "history omits current Release",
+			body: `{"site":{"slug":"first-site","current_release_number":2},"releases":[],"pagination":{"limit":1,"next_before":null}}`,
+			call: func(client *api.Client) error {
+				_, err := client.ListReleases(context.Background(), "first-site", 1, 0)
+				return err
+			},
+		},
+		{
+			name: "history exposes Releases without a current pointer",
+			body: `{"site":{"slug":"first-site","current_release_number":null},"releases":[{"id":23,"number":2,"manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","finalized_at":"2026-07-20T12:02:00Z","current":false,"files":1,"bytes":1}],"pagination":{"limit":1,"next_before":null}}`,
+			call: func(client *api.Client) error {
+				_, err := client.ListReleases(context.Background(), "first-site", 1, 0)
+				return err
+			},
+		},
+		{
 			name: "rollback changed marker",
 			body: `{"rollback":{"id":31,"site_slug":"first-site","from_release_number":2,"to_release_number":1,"resulting_release_number":1,"changed":false,"recorded_at":"2026-07-20T12:03:00Z"}}`,
 			call: func(client *api.Client) error {

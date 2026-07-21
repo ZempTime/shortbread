@@ -67,6 +67,49 @@ func TestReleasesRollbackGeneratesASecretKeyAndWritesStableJSON(t *testing.T) {
 	}
 }
 
+func TestReleasesRollbackReusesDurableKeyAfterAnAmbiguousResponse(t *testing.T) {
+	stateDir := t.TempDir()
+	randomBytes := bytes.Repeat([]byte{0x35}, 32)
+	wantKey := base64.RawURLEncoding.EncodeToString(randomBytes)
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		requests++
+		if request.Header.Get("Idempotency-Key") != wantKey {
+			t.Fatal("rollback changed its operation key")
+		}
+		response.Header().Set("Content-Type", "application/json")
+		if requests == 1 {
+			response.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		response.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(response, `{"rollback":{"id":31,"site_slug":"first-site","from_release_number":2,"to_release_number":1,"resulting_release_number":1,"changed":true,"recorded_at":"2026-07-20T12:03:00Z"}}`)
+	}))
+	defer server.Close()
+
+	lookup := func(name string) (string, bool) {
+		switch name {
+		case "SHORTBREAD_TOKEN":
+			return "TOKEN_MARKER", true
+		case "SHORTBREAD_STATE_DIR":
+			return stateDir, true
+		default:
+			return "", false
+		}
+	}
+	args := []string{"--server", server.URL, "--json", "releases", "rollback", "--site", "first-site", "--release", "1"}
+	if exit := command.Execute(context.Background(), args, command.Runtime{LookupEnv: lookup, Random: bytes.NewReader(randomBytes), Stdout: io.Discard}); exit != 4 {
+		t.Fatalf("first exit = %d", exit)
+	}
+	stdout := &bytes.Buffer{}
+	if exit := command.Execute(context.Background(), args, command.Runtime{LookupEnv: lookup, Random: strings.NewReader(""), Stdout: stdout}); exit != 0 {
+		t.Fatalf("retry exit = %d output=%q", exit, stdout.String())
+	}
+	if requests != 2 || !strings.Contains(stdout.String(), `"id":31`) {
+		t.Fatalf("retry evidence requests=%d output=%q", requests, stdout.String())
+	}
+}
+
 func releaseRuntime(random io.Reader) (*bytes.Buffer, *bytes.Buffer, command.Runtime) {
 	stdout := &bytes.Buffer{}
 	stderr := &bytes.Buffer{}

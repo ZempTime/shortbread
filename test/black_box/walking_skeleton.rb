@@ -36,16 +36,19 @@ module ShortbreadBlackBox
         fields: { "id" => :positive_integer, "link_written" => :true }, returns: %w[id link_written]
       },
       publish: {
-        keys: %w[bytes files id number resource reused status uploaded], resource: "release", status: "published",
+        keys: %w[added bytes changed files id number removed resource reused status uploaded], resource: "release", status: "published",
         fields: {
           "id" => :positive_integer,
           "number" => :positive_integer,
           "files" => :positive_integer,
           "uploaded" => :nonnegative_integer,
+          "added" => :nonnegative_integer,
+          "changed" => :nonnegative_integer,
           "reused" => :nonnegative_integer,
+          "removed" => :nonnegative_integer,
           "bytes" => :positive_integer
         },
-        returns: %w[id number files uploaded reused bytes]
+        returns: %w[id number files uploaded added changed reused removed bytes]
       },
       release_history: {
         keys: %w[current_release_number pagination releases resource site_slug],
@@ -129,7 +132,8 @@ module ShortbreadBlackBox
         raise Failure unless valid_field?(result[key], validator)
       end
       if contract.fetch(:resource) == "release"
-        raise Failure unless result["files"] == result["uploaded"] + result["reused"]
+        raise Failure unless result["files"] == result.values_at("added", "changed", "reused").sum
+        raise Failure unless result["uploaded"] <= result["added"] + result["changed"]
       elsif contract.fetch(:resource) == "release_history"
         current = result.fetch("current_release_number")
         current_releases = result.fetch("releases").select { |release| release.fetch("current") }
@@ -634,7 +638,7 @@ module ShortbreadBlackBox
       release = @cli.call(:publish, "publish", @bundle_dir, "--site", SITE_SLUG)
       raise Failure unless release.fetch(:number) == 1
       raise Failure unless release.fetch(:files) == 3
-      raise Failure unless release.fetch(:uploaded) == 3 && release.fetch(:reused).zero?
+      raise Failure unless release.values_at(:uploaded, :added, :changed, :reused, :removed) == [ 3, 3, 0, 0, 0 ]
       raise Failure unless release.fetch(:bytes) == total_bytes(@release_one_contents)
     end
 
@@ -703,7 +707,7 @@ module ShortbreadBlackBox
         second_release = @cli.call(:publish, "publish", @bundle_dir, "--site", SITE_SLUG)
         raise Failure unless second_release.fetch(:number) == 2
         raise Failure unless second_release.fetch(:files) == 3
-        raise Failure unless second_release.fetch(:uploaded) == 2 && second_release.fetch(:reused) == 1
+        raise Failure unless second_release.values_at(:uploaded, :added, :changed, :reused, :removed) == [ 2, 1, 1, 1, 1 ]
         raise Failure unless second_release.fetch(:bytes) == total_bytes(@release_two_contents)
 
         browser.navigate.to("#{@site_origin}/?release-check=2")

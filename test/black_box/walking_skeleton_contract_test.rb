@@ -103,14 +103,17 @@ class WalkingSkeletonContractTest < ActiveSupport::TestCase
         number: 1,
         files: 1,
         uploaded: 1,
+        added: 1,
+        changed: 0,
         reused: 0,
+        removed: 0,
         bytes: 324
       }
     }
 
     with_cli(stdout: JSON.generate(payload)) do |cli|
       assert_equal(
-        { id: 23, number: 1, files: 1, uploaded: 1, reused: 0, bytes: 324 },
+        { id: 23, number: 1, files: 1, uploaded: 1, added: 1, changed: 0, reused: 0, removed: 0, bytes: 324 },
         cli.call(:publish, "publish", "synthetic-bundle", "--site", "synthetic-site")
       )
     end

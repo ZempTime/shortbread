@@ -132,10 +132,10 @@ class ReleasesApiTest < ActionDispatch::IntegrationTest
   end
 
   def release_with_entries(site:, number:, digest_character:, sizes:)
+    finalized_at = Time.utc(2026, 7, 20, 12, number, 0)
     release = site.releases.create!(
       number:,
-      manifest_sha256: digest_character * 64,
-      finalized_at: Time.utc(2026, 7, 20, 12, number, 0)
+      manifest_sha256: digest_character * 64
     )
     sizes.each_with_index do |size, index|
       digest = Digest::SHA256.hexdigest("#{site.slug}-#{number}-#{index}")
@@ -148,6 +148,7 @@ class ReleasesApiTest < ActionDispatch::IntegrationTest
         offline_policy: index.zero? ? "required" : "download"
       )
     end
+    release.update!(finalized_at:)
     release
   end
 

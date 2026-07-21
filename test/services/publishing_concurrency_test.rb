@@ -82,11 +82,9 @@ class PublishingConcurrencyTest < ActiveSupport::TestCase
   end
 
   def clear_publishing_records
-    Site.update_all(current_release_id: nil)
-    PublishPlan.delete_all
-    ManifestEntry.delete_all
-    Release.delete_all
-    Blob.delete_all
-    Site.delete_all
+    ActiveRecord::Base.connection.execute(<<~SQL)
+      TRUNCATE TABLE release_rollbacks, publish_plans, manifest_entries, releases, blobs, grants, invitations, sites
+      RESTART IDENTITY CASCADE
+    SQL
   end
 end

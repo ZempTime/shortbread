@@ -1,7 +1,6 @@
 package command
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -81,17 +80,15 @@ func newReleasesCommand(runtime Runtime, server *string, jsonOutput *bool) *cobr
 			if !validSiteSlug(rollbackSite) || releaseNumber <= 0 || runtime.Random == nil {
 				return &failureError{failure: invalidInput}
 			}
-			var entropy [32]byte
-			defer clear(entropy[:])
-			if _, err := io.ReadFull(runtime.Random, entropy[:]); err != nil {
+			key, err := acquireOperationKey(runtime, "rollback", *server, rollbackSite, fmt.Sprint(releaseNumber))
+			if err != nil {
 				return &failureError{failure: internalFailure}
 			}
-			idempotencyKey := base64.RawURLEncoding.EncodeToString(entropy[:])
 			client, err := newClient(*server, runtime.LookupEnv)
 			if err != nil {
 				return err
 			}
-			rolledBack, err := client.RollbackRelease(command.Context(), rollbackSite, releaseNumber, idempotencyKey)
+			rolledBack, err := client.RollbackRelease(command.Context(), rollbackSite, releaseNumber, key.value)
 			if err != nil {
 				return &failureError{failure: requestFailed}
 			}
@@ -111,6 +108,9 @@ func newReleasesCommand(runtime Runtime, server *string, jsonOutput *bool) *cobr
 				RecordedAt:             rolledBack.RecordedAt,
 			}
 			if err := writeReleaseRollback(runtime.Stdout, *jsonOutput, result); err != nil {
+				return &failureError{failure: internalFailure}
+			}
+			if err := key.complete(); err != nil {
 				return &failureError{failure: internalFailure}
 			}
 			return nil

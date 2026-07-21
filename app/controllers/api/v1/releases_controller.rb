@@ -16,7 +16,7 @@ module Api
 
         limit = pagination_integer(:limit, default: DEFAULT_LIMIT, maximum: MAX_LIMIT)
         before = pagination_integer(:before, default: nil)
-        scope = site.releases.includes(:manifest_entries).order(number: :desc)
+        scope = site.releases.where.not(finalized_at: nil).includes(:manifest_entries).order(number: :desc)
         scope = scope.where("number < ?", before) if before
         page = scope.limit(limit + 1).to_a
         has_more = page.length > limit

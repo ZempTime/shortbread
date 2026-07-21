@@ -123,6 +123,9 @@ func validReleaseHistory(history ReleaseHistory, siteSlug string, limit int, bef
 	if history.Site.CurrentReleaseNumber != nil && *history.Site.CurrentReleaseNumber <= 0 {
 		return false
 	}
+	if before == 0 && (history.Site.CurrentReleaseNumber == nil) != (len(history.Releases) == 0) {
+		return false
+	}
 	seenIDs := make(map[int64]struct{}, len(history.Releases))
 	seenNumbers := make(map[int64]struct{}, len(history.Releases))
 	var previous int64

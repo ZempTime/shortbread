@@ -152,8 +152,7 @@ class SiteContentTest < ActionDispatch::IntegrationTest
       blob = Blob.create!(sha256: digest, byte_size: content.bytesize, storage_key:)
       release = site.releases.create!(
         number: 1,
-        manifest_sha256: Digest::SHA256.hexdigest("manifest"),
-        finalized_at: Time.current
+        manifest_sha256: Digest::SHA256.hexdigest("manifest")
       )
       release.manifest_entries.create!(
         blob:,
@@ -162,6 +161,7 @@ class SiteContentTest < ActionDispatch::IntegrationTest
         content_type: "text/html",
         offline_policy: "required"
       )
+      release.update!(finalized_at: Time.current)
       site.update!(current_release: release)
 
       yield site, grant, digest

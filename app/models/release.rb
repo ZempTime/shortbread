@@ -14,9 +14,9 @@ class Release < ApplicationRecord
     dependent: :restrict_with_exception,
     inverse_of: :to_release
 
-  attr_readonly :site_id, :number, :manifest_sha256, :finalized_at
+  attr_readonly :site_id, :number, :manifest_sha256
 
   validates :number, numericality: { only_integer: true, greater_than: 0 }, uniqueness: { scope: :site_id }
   validates :manifest_sha256, presence: true, format: { with: Blob::SHA256_FORMAT }
-  validates :finalized_at, presence: true
+  validates :finalized_at, presence: true, on: :update
 end
