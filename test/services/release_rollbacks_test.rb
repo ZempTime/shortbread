@@ -2,6 +2,7 @@
 
 require "test_helper"
 
+require "digest"
 require "securerandom"
 
 class ReleaseRollbacksTest < ActiveSupport::TestCase
@@ -79,8 +80,19 @@ class ReleaseRollbacksTest < ActiveSupport::TestCase
 
   def site_with_two_releases(slug)
     site = Site.create!(slug:, name: slug.titleize)
-    first = site.releases.create!(number: 1, manifest_sha256: "a" * 64, finalized_at: 2.minutes.ago)
-    second = site.releases.create!(number: 2, manifest_sha256: "b" * 64, finalized_at: 1.minute.ago)
+    first = assembled_release(site:, number: 1, manifest_sha256: "a" * 64, finalized_at: 2.minutes.ago)
+    second = assembled_release(site:, number: 2, manifest_sha256: "b" * 64, finalized_at: 1.minute.ago)
     [ site, first, second ]
+  end
+
+  def assembled_release(site:, number:, manifest_sha256:, finalized_at:)
+    digest = Digest::SHA256.hexdigest("#{site.slug}:#{number}")
+    blob = Blob.create!(sha256: digest, byte_size: 1, storage_key: digest)
+    assemble_test_release!(
+      site:, number:, manifest_sha256:, finalized_at:,
+      entries: [ {
+        blob:, path: "release-#{number}.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
+      } ]
+    )
   end
 end

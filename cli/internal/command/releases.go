@@ -71,6 +71,7 @@ func newReleasesCommand(runtime Runtime, server *string, jsonOutput *bool) *cobr
 
 	var rollbackSite string
 	var releaseNumber int64
+	var newRollbackOperation bool
 	rollback := &cobra.Command{
 		Use:          "rollback",
 		Short:        "Select an earlier immutable Release",
@@ -80,7 +81,7 @@ func newReleasesCommand(runtime Runtime, server *string, jsonOutput *bool) *cobr
 			if !validSiteSlug(rollbackSite) || releaseNumber <= 0 || runtime.Random == nil {
 				return &failureError{failure: invalidInput}
 			}
-			key, err := acquireOperationKey(runtime, "rollback", *server, rollbackSite, fmt.Sprint(releaseNumber))
+			key, err := acquireOperationKey(runtime, newRollbackOperation, "rollback", *server, rollbackSite, fmt.Sprint(releaseNumber))
 			if err != nil {
 				return &failureError{failure: internalFailure}
 			}
@@ -118,6 +119,7 @@ func newReleasesCommand(runtime Runtime, server *string, jsonOutput *bool) *cobr
 	}
 	rollback.Flags().StringVar(&rollbackSite, "site", "", "Site slug")
 	rollback.Flags().Int64Var(&releaseNumber, "release", 0, "Release number")
+	rollback.Flags().BoolVar(&newRollbackOperation, "new-operation", false, "replace an expired or abandoned rollback retry")
 
 	releases.AddCommand(list, rollback)
 	return releases

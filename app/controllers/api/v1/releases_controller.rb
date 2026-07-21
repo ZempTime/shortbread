@@ -14,24 +14,27 @@ module Api
         site = Site.find_by(slug: params[:site_slug])
         return render_error("site_not_found", :not_found) unless site
 
-        limit = pagination_integer(:limit, default: DEFAULT_LIMIT, maximum: MAX_LIMIT)
-        before = pagination_integer(:before, default: nil)
-        scope = site.releases.where.not(finalized_at: nil).includes(:manifest_entries).order(number: :desc)
-        scope = scope.where("number < ?", before) if before
-        page = scope.limit(limit + 1).to_a
-        has_more = page.length > limit
-        releases = page.first(limit)
-        render json: {
-          site: {
-            slug: site.slug,
-            current_release_number: site.current_release&.number
-          },
-          releases: releases.map { |release| release_payload(release, current: release == site.current_release) },
-          pagination: {
-            limit:,
-            next_before: has_more ? releases.last.number : nil
+        site.with_lock do
+          limit = pagination_integer(:limit, default: DEFAULT_LIMIT, maximum: MAX_LIMIT)
+          before = pagination_integer(:before, default: nil)
+          current_release = site.current_release
+          scope = site.releases.where.not(finalized_at: nil).includes(:manifest_entries).order(number: :desc)
+          scope = scope.where("number < ?", before) if before
+          page = scope.limit(limit + 1).to_a
+          has_more = page.length > limit
+          releases = page.first(limit)
+          render json: {
+            site: {
+              slug: site.slug,
+              current_release_number: current_release&.number
+            },
+            releases: releases.map { |release| release_payload(release, current: release == current_release) },
+            pagination: {
+              limit:,
+              next_before: has_more ? releases.last.number : nil
+            }
           }
-        }
+        end
       rescue InvalidPagination
         render_error("invalid_pagination", :unprocessable_entity)
       end

@@ -71,6 +71,69 @@ class PublishingConcurrencyTest < ActiveSupport::TestCase
     end
   end
 
+  test "Release finalization serializes a concurrent late Manifest Entry" do
+    site = Site.create!(slug: "first-site", name: "First Site")
+    first_blob = Blob.create!(sha256: "a" * 64, byte_size: 1, storage_key: "a" * 64)
+    late_blob = Blob.create!(sha256: "b" * 64, byte_size: 1, storage_key: "b" * 64)
+    plan = site.publish_plans.create!(
+      idempotency_key_digest: "d" * 64,
+      manifest_sha256: "c" * 64,
+      manifest: { "entries" => [ {
+        "path" => "index.html", "sha256" => first_blob.sha256, "size" => 1,
+        "content_type" => "text/html", "offline_policy" => "required"
+      } ] },
+      state: "open",
+      expires_at: 1.hour.from_now
+    )
+    release = site.releases.create!(number: 1, manifest_sha256: "c" * 64)
+    plan.update!(release:)
+    release.manifest_entries.create!(
+      blob: first_blob, path: "index.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
+    )
+    finalized = Queue.new
+    commit = Queue.new
+    result = Queue.new
+
+    finalizer = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        Release.transaction do
+          Release.find(release.id).update!(finalized_at: Time.current)
+          PublishPlan.find(plan.id).update!(state: "finalized", finalized_at: Time.current)
+          finalized << true
+          commit.pop
+        end
+      end
+    end
+    finalized.pop
+    inserter = Thread.new do
+      ActiveRecord::Base.connection_pool.with_connection do
+        result << begin
+          ManifestEntry.create!(
+            release_id: release.id,
+            blob: late_blob,
+            path: "late.txt",
+            byte_size: 1,
+            content_type: "text/plain",
+            offline_policy: "download"
+          )
+        rescue StandardError => error
+          error
+        end
+      end
+    end
+    commit << true
+    finalizer.join
+    inserter.join
+
+    assert_instance_of ActiveRecord::StatementInvalid, result.pop
+    assert_equal [ "index.html" ], release.reload.manifest_entries.pluck(:path)
+    assert_predicate release.finalized_at, :present?
+  ensure
+    commit << true if finalizer&.alive?
+    finalizer&.kill
+    inserter&.kill
+  end
+
   private
 
   GatedBlobStore = Data.define(:delegate, :ready, :start) do

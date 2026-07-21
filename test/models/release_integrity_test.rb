@@ -2,19 +2,17 @@
 
 require "test_helper"
 
+require "digest"
+
 class ReleaseIntegrityTest < ActiveSupport::TestCase
   test "PostgreSQL rejects direct mutation of historical Release content" do
     site = Site.create!(slug: "first-site", name: "First Site")
     blob = Blob.create!(sha256: "c" * 64, byte_size: 4, storage_key: "c" * 64)
-    release = site.releases.create!(number: 1, manifest_sha256: "a" * 64)
-    entry = release.manifest_entries.create!(
-      blob:,
-      path: "index.html",
-      byte_size: 4,
-      content_type: "text/html",
-      offline_policy: "required"
+    release = assemble_test_release!(
+      site:, number: 1, manifest_sha256: "a" * 64, finalized_at: Time.current,
+      entries: [ { blob:, path: "index.html", byte_size: 4, content_type: "text/html", offline_policy: "required" } ]
     )
-    release.update!(finalized_at: Time.current)
+    entry = release.manifest_entries.sole
 
     assert_database_rejects(ActiveRecord::StatementInvalid) do
       ActiveRecord::Base.connection.execute(
@@ -34,15 +32,11 @@ class ReleaseIntegrityTest < ActiveSupport::TestCase
   test "PostgreSQL rejects deleting content from an immutable Release" do
     site = Site.create!(slug: "first-site", name: "First Site")
     blob = Blob.create!(sha256: "c" * 64, byte_size: 4, storage_key: "c" * 64)
-    release = site.releases.create!(number: 1, manifest_sha256: "a" * 64)
-    entry = release.manifest_entries.create!(
-      blob:,
-      path: "index.html",
-      byte_size: 4,
-      content_type: "text/html",
-      offline_policy: "required"
+    release = assemble_test_release!(
+      site:, number: 1, manifest_sha256: "a" * 64, finalized_at: Time.current,
+      entries: [ { blob:, path: "index.html", byte_size: 4, content_type: "text/html", offline_policy: "required" } ]
     )
-    release.update!(finalized_at: Time.current)
+    entry = release.manifest_entries.sole
 
     assert_database_rejects(ActiveRecord::StatementInvalid) do
       ActiveRecord::Base.connection.execute("DELETE FROM manifest_entries WHERE id = #{entry.id}")
@@ -54,8 +48,10 @@ class ReleaseIntegrityTest < ActiveSupport::TestCase
   test "PostgreSQL rejects appending content after Release finalization" do
     site = Site.create!(slug: "first-site", name: "First Site")
     blob = Blob.create!(sha256: "c" * 64, byte_size: 4, storage_key: "c" * 64)
-    release = site.releases.create!(number: 1, manifest_sha256: "a" * 64)
-    release.update!(finalized_at: Time.current)
+    release = assemble_test_release!(
+      site:, number: 1, manifest_sha256: "a" * 64, finalized_at: Time.current,
+      entries: [ { blob:, path: "index.html", byte_size: 4, content_type: "text/html", offline_policy: "required" } ]
+    )
 
     assert_database_rejects(ActiveRecord::StatementInvalid) do
       release.manifest_entries.create!(
@@ -67,21 +63,29 @@ class ReleaseIntegrityTest < ActiveSupport::TestCase
       )
     end
 
-    assert_empty release.reload.manifest_entries
+    assert_equal [ "index.html" ], release.reload.manifest_entries.pluck(:path)
+  end
+
+  test "PostgreSQL rejects pre-finalized insertion and empty finalization" do
+    site = Site.create!(slug: "first-site", name: "First Site")
+
+    assert_database_rejects(ActiveRecord::StatementInvalid) do
+      site.releases.create!(number: 1, manifest_sha256: "a" * 64, finalized_at: Time.current)
+    end
+    release = site.releases.create!(number: 1, manifest_sha256: "a" * 64)
+    assert_database_rejects(ActiveRecord::StatementInvalid) do
+      release.update!(finalized_at: Time.current)
+    end
+
+    assert_nil release.reload.finalized_at
+    assert_nil site.reload.current_release_id
   end
 
   test "PostgreSQL retains finalized publish and rollback idempotency rows" do
     site = Site.create!(slug: "first-site", name: "First Site")
-    first = site.releases.create!(number: 1, manifest_sha256: "a" * 64, finalized_at: 2.minutes.ago)
-    second = site.releases.create!(number: 2, manifest_sha256: "b" * 64, finalized_at: 1.minute.ago)
-    plan = site.publish_plans.create!(
-      idempotency_key_digest: "c" * 64,
-      manifest_sha256: "d" * 64,
-      manifest: { "entries" => [ { "path" => "index.html" } ] },
-      state: "open",
-      expires_at: 1.hour.from_now
-    )
-    plan.update!(release: second, state: "finalized", finalized_at: Time.current)
+    first = assemble_release(site:, number: 1, manifest_sha256: "a" * 64, finalized_at: 2.minutes.ago)
+    second = assemble_release(site:, number: 2, manifest_sha256: "b" * 64, finalized_at: 1.minute.ago)
+    plan = PublishPlan.find_by!(release: second)
     rollback = site.release_rollbacks.create!(
       from_release: second,
       to_release: first,
@@ -92,6 +96,38 @@ class ReleaseIntegrityTest < ActiveSupport::TestCase
     assert_database_rejects(ActiveRecord::StatementInvalid) { rollback.delete }
     assert_equal [ plan.id ], PublishPlan.where(id: plan.id).pluck(:id)
     assert_equal [ rollback.id ], ReleaseRollback.where(id: rollback.id).pluck(:id)
+  end
+
+  test "PostgreSQL rejects an incompatible Release and a pre-finalized Publish Plan" do
+    site = Site.create!(slug: "first-site", name: "First Site")
+    release = assemble_release(site:, number: 1, manifest_sha256: "a" * 64, finalized_at: Time.current)
+    plan = site.publish_plans.create!(
+      idempotency_key_digest: "c" * 64,
+      manifest_sha256: "d" * 64,
+      manifest: { "entries" => [ { "path" => "index.html" } ] },
+      state: "open",
+      expires_at: 1.hour.from_now
+    )
+
+    assert_database_rejects(ActiveRecord::StatementInvalid) do
+      plan.update!(release:, state: "finalized", finalized_at: Time.current)
+    end
+    assert_database_rejects(ActiveRecord::StatementInvalid) do
+      PublishPlan.insert!({
+        site_id: site.id,
+        release_id: release.id,
+        idempotency_key_digest: "e" * 64,
+        manifest_sha256: release.manifest_sha256,
+        manifest: { "entries" => [ { "path" => "index.html" } ] },
+        state: "finalized",
+        expires_at: 1.hour.from_now,
+        finalized_at: Time.current,
+        created_at: Time.current,
+        updated_at: Time.current
+      })
+    end
+    assert_predicate plan.reload, :open?
+    assert_nil plan.release_id
   end
 
   test "PostgreSQL rejects Publish Plan input mutation and an unfinalized current pointer" do
@@ -119,8 +155,8 @@ class ReleaseIntegrityTest < ActiveSupport::TestCase
   test "PostgreSQL rejects cross-Site current, plan, and rollback Release references" do
     first_site = Site.create!(slug: "first-site", name: "First Site")
     second_site = Site.create!(slug: "second-site", name: "Second Site")
-    first_release = first_site.releases.create!(number: 1, manifest_sha256: "a" * 64, finalized_at: Time.current)
-    second_release = second_site.releases.create!(number: 1, manifest_sha256: "b" * 64, finalized_at: Time.current)
+    first_release = assemble_release(site: first_site, number: 1, manifest_sha256: "a" * 64, finalized_at: Time.current)
+    second_release = assemble_release(site: second_site, number: 1, manifest_sha256: "b" * 64, finalized_at: Time.current)
 
     assert_database_rejects(ActiveRecord::StatementInvalid) do
       Site.where(id: first_site.id).update_all(current_release_id: second_release.id)
@@ -153,6 +189,20 @@ class ReleaseIntegrityTest < ActiveSupport::TestCase
   end
 
   private
+
+  def assemble_release(site:, number:, manifest_sha256:, finalized_at:)
+    blob_digest = Digest::SHA256.hexdigest("#{site.slug}:#{number}")
+    blob = Blob.find_or_create_by!(sha256: blob_digest) do |record|
+      record.byte_size = 1
+      record.storage_key = blob_digest
+    end
+    assemble_test_release!(
+      site:, number:, manifest_sha256:, finalized_at:,
+      entries: [ {
+        blob:, path: "release-#{number}.html", byte_size: 1, content_type: "text/html", offline_policy: "required"
+      } ]
+    )
+  end
 
   def assert_database_rejects(error_class, &)
     assert_raises(error_class) do

@@ -102,10 +102,8 @@ class ReleasesApiTest < ActionDispatch::IntegrationTest
     site, _first_release, second_release = site_with_two_releases("first-site")
     site.update!(current_release: second_release)
     other_site, = site_with_two_releases("other-site")
-    private_release = other_site.releases.create!(
-      number: 3,
-      manifest_sha256: "f" * 64,
-      finalized_at: Time.current
+    private_release = release_with_entries(
+      site: other_site, number: 3, digest_character: "f", sizes: [ 1 ]
     )
 
     with_bootstrap_token do |token|
@@ -133,23 +131,18 @@ class ReleasesApiTest < ActionDispatch::IntegrationTest
 
   def release_with_entries(site:, number:, digest_character:, sizes:)
     finalized_at = Time.utc(2026, 7, 20, 12, number, 0)
-    release = site.releases.create!(
-      number:,
-      manifest_sha256: digest_character * 64
-    )
-    sizes.each_with_index do |size, index|
+    entries = sizes.each_with_index.map do |size, index|
       digest = Digest::SHA256.hexdigest("#{site.slug}-#{number}-#{index}")
       blob = Blob.create!(sha256: digest, byte_size: size, storage_key: digest)
-      release.manifest_entries.create!(
+      {
         blob:,
         path: index.zero? ? "index.html" : "asset-#{index}.txt",
         byte_size: size,
         content_type: index.zero? ? "text/html" : "text/plain",
         offline_policy: index.zero? ? "required" : "download"
-      )
+      }
     end
-    release.update!(finalized_at:)
-    release
+    assemble_test_release!(site:, number:, manifest_sha256: digest_character * 64, finalized_at:, entries:)
   end
 
   def release_payload(release, current:)

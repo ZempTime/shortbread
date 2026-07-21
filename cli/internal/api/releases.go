@@ -158,5 +158,10 @@ func validReleaseHistory(history ReleaseHistory, siteSlug string, limit int, bef
 			return false
 		}
 	}
+	if before == 0 && history.Pagination.NextBefore == nil && history.Site.CurrentReleaseNumber != nil {
+		if _, present := seenNumbers[*history.Site.CurrentReleaseNumber]; !present {
+			return false
+		}
+	}
 	return true
 }

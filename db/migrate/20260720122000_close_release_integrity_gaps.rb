@@ -15,6 +15,12 @@ class CloseReleaseIntegrityGaps < ActiveRecord::Migration[8.1]
       LANGUAGE plpgsql
       AS $$
       BEGIN
+        IF TG_OP = 'INSERT' THEN
+          IF NEW.finalized_at IS NOT NULL THEN
+            RAISE EXCEPTION 'Release rows must be assembled before finalization' USING ERRCODE = '55000';
+          END IF;
+          RETURN NEW;
+        END IF;
         IF TG_OP = 'DELETE' THEN
           RAISE EXCEPTION 'Shortbread immutable Release rows cannot be deleted' USING ERRCODE = '55000';
         END IF;
@@ -22,7 +28,30 @@ class CloseReleaseIntegrityGaps < ActiveRecord::Migration[8.1]
           AND NEW.finalized_at IS NOT NULL
           AND OLD.site_id IS NOT DISTINCT FROM NEW.site_id
           AND OLD.number IS NOT DISTINCT FROM NEW.number
-          AND OLD.manifest_sha256 IS NOT DISTINCT FROM NEW.manifest_sha256 THEN
+          AND OLD.manifest_sha256 IS NOT DISTINCT FROM NEW.manifest_sha256
+          AND EXISTS (
+            SELECT 1
+            FROM publish_plans plan
+            WHERE plan.release_id = OLD.id
+              AND plan.state = 'open'
+              AND plan.site_id = OLD.site_id
+              AND plan.manifest_sha256 = OLD.manifest_sha256
+              AND jsonb_array_length(plan.manifest->'entries') = (
+                SELECT COUNT(*) FROM manifest_entries WHERE release_id = OLD.id
+              )
+              AND NOT EXISTS (
+                SELECT 1
+                FROM jsonb_array_elements(plan.manifest->'entries') expected
+                LEFT JOIN manifest_entries entry
+                  ON entry.release_id = OLD.id AND entry.path = expected->>'path'
+                LEFT JOIN blobs blob ON blob.id = entry.blob_id
+                WHERE entry.id IS NULL
+                  OR blob.sha256 <> expected->>'sha256'
+                  OR entry.byte_size <> (expected->>'size')::bigint
+                  OR entry.content_type <> expected->>'content_type'
+                  OR entry.offline_policy <> expected->>'offline_policy'
+              )
+          ) THEN
           RETURN NEW;
         END IF;
         RAISE EXCEPTION 'Shortbread immutable Release rows cannot be updated' USING ERRCODE = '55000';
@@ -31,7 +60,7 @@ class CloseReleaseIntegrityGaps < ActiveRecord::Migration[8.1]
     SQL
     execute <<~SQL
       CREATE TRIGGER shortbread_release_lifecycle
-      BEFORE UPDATE OR DELETE ON releases
+      BEFORE INSERT OR UPDATE OR DELETE ON releases
       FOR EACH ROW
       EXECUTE FUNCTION shortbread_guard_release_lifecycle()
     SQL
@@ -47,7 +76,7 @@ class CloseReleaseIntegrityGaps < ActiveRecord::Migration[8.1]
         IF TG_OP <> 'INSERT' THEN
           RAISE EXCEPTION 'Shortbread immutable Manifest Entry rows cannot be changed' USING ERRCODE = '55000';
         END IF;
-        SELECT finalized_at INTO parent_finalized_at FROM releases WHERE id = NEW.release_id;
+        SELECT finalized_at INTO parent_finalized_at FROM releases WHERE id = NEW.release_id FOR UPDATE;
         IF parent_finalized_at IS NOT NULL THEN
           RAISE EXCEPTION 'Manifest Entries cannot be added to a finalized Release' USING ERRCODE = '55000';
         END IF;
@@ -68,13 +97,40 @@ class CloseReleaseIntegrityGaps < ActiveRecord::Migration[8.1]
       LANGUAGE plpgsql
       AS $$
       BEGIN
+        IF TG_OP = 'INSERT' THEN
+          IF NEW.state <> 'open' OR NEW.release_id IS NOT NULL OR NEW.finalized_at IS NOT NULL THEN
+            RAISE EXCEPTION 'Publish Plan rows must begin open and unbound' USING ERRCODE = '55000';
+          END IF;
+          RETURN NEW;
+        END IF;
         IF TG_OP = 'DELETE' THEN
           RAISE EXCEPTION 'Publish Plan idempotency rows cannot be deleted' USING ERRCODE = '55000';
         END IF;
         IF OLD.state = 'open'
-          AND NEW.state = 'finalized'
+          AND NEW.state = 'open'
           AND OLD.release_id IS NULL
           AND NEW.release_id IS NOT NULL
+          AND OLD.finalized_at IS NULL
+          AND NEW.finalized_at IS NULL
+          AND OLD.site_id IS NOT DISTINCT FROM NEW.site_id
+          AND OLD.base_release_id IS NOT DISTINCT FROM NEW.base_release_id
+          AND OLD.idempotency_key_digest IS NOT DISTINCT FROM NEW.idempotency_key_digest
+          AND OLD.manifest_sha256 IS NOT DISTINCT FROM NEW.manifest_sha256
+          AND OLD.manifest IS NOT DISTINCT FROM NEW.manifest
+          AND OLD.expires_at IS NOT DISTINCT FROM NEW.expires_at
+          AND EXISTS (
+            SELECT 1 FROM releases
+            WHERE id = NEW.release_id
+              AND site_id = NEW.site_id
+              AND finalized_at IS NULL
+              AND manifest_sha256 = NEW.manifest_sha256
+          ) THEN
+          RETURN NEW;
+        END IF;
+        IF OLD.state = 'open'
+          AND NEW.state = 'finalized'
+          AND OLD.release_id IS NOT NULL
+          AND NEW.release_id = OLD.release_id
           AND OLD.finalized_at IS NULL
           AND NEW.finalized_at IS NOT NULL
           AND OLD.site_id IS NOT DISTINCT FROM NEW.site_id
@@ -82,7 +138,14 @@ class CloseReleaseIntegrityGaps < ActiveRecord::Migration[8.1]
           AND OLD.idempotency_key_digest IS NOT DISTINCT FROM NEW.idempotency_key_digest
           AND OLD.manifest_sha256 IS NOT DISTINCT FROM NEW.manifest_sha256
           AND OLD.manifest IS NOT DISTINCT FROM NEW.manifest
-          AND OLD.expires_at IS NOT DISTINCT FROM NEW.expires_at THEN
+          AND OLD.expires_at IS NOT DISTINCT FROM NEW.expires_at
+          AND EXISTS (
+            SELECT 1 FROM releases
+            WHERE id = NEW.release_id
+              AND site_id = NEW.site_id
+              AND finalized_at IS NOT NULL
+              AND manifest_sha256 = NEW.manifest_sha256
+          ) THEN
           RETURN NEW;
         END IF;
         RAISE EXCEPTION 'Publish Plan rows permit only exact finalization' USING ERRCODE = '55000';
@@ -91,7 +154,7 @@ class CloseReleaseIntegrityGaps < ActiveRecord::Migration[8.1]
     SQL
     execute <<~SQL
       CREATE TRIGGER shortbread_publish_plan_lifecycle
-      BEFORE UPDATE OR DELETE ON publish_plans
+      BEFORE INSERT OR UPDATE OR DELETE ON publish_plans
       FOR EACH ROW
       EXECUTE FUNCTION shortbread_guard_publish_plan_lifecycle()
     SQL
@@ -149,5 +212,25 @@ class CloseReleaseIntegrityGaps < ActiveRecord::Migration[8.1]
     execute "DROP TRIGGER IF EXISTS shortbread_release_lifecycle ON releases"
     execute "DROP FUNCTION IF EXISTS shortbread_guard_release_lifecycle()"
     change_column_null :releases, :finalized_at, false
+
+    execute <<~SQL
+      CREATE FUNCTION shortbread_reject_immutable_row_update()
+      RETURNS trigger
+      LANGUAGE plpgsql
+      AS $$
+      BEGIN
+        RAISE EXCEPTION 'Shortbread immutable % rows cannot be updated', TG_TABLE_NAME
+          USING ERRCODE = '55000';
+      END;
+      $$
+    SQL
+    %w[releases manifest_entries release_rollbacks].each do |table|
+      execute <<~SQL
+        CREATE TRIGGER shortbread_immutable_update
+        BEFORE UPDATE ON #{quote_table_name(table)}
+        FOR EACH ROW
+        EXECUTE FUNCTION shortbread_reject_immutable_row_update()
+      SQL
+    end
   end
 end

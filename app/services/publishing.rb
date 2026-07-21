@@ -13,6 +13,7 @@ module Publishing
   class PublishIncomplete < StandardError; end
   class PublishPlanExpired < StandardError; end
   class StalePublishPlan < StandardError; end
+  class InconsistentPublishPlan < StandardError; end
 
   module_function
 
@@ -49,7 +50,12 @@ module Publishing
     PublishPlan.transaction do
       publish_plan.lock!
       if publish_plan.release_id
-        FinalizeResult.new(release: publish_plan.release, created: false)
+        release = publish_plan.release
+        consistent = publish_plan.state == "finalized" && release.finalized_at.present? &&
+          release.site_id == publish_plan.site_id && release.manifest_sha256 == publish_plan.manifest_sha256
+        raise InconsistentPublishPlan unless consistent
+
+        FinalizeResult.new(release:, created: false)
       else
         raise PublishPlanExpired unless publish_plan.open? && publish_plan.expires_at > now
 
@@ -66,6 +72,7 @@ module Publishing
           number: site.releases.maximum(:number).to_i + 1,
           manifest_sha256: publish_plan.manifest_sha256
         )
+        publish_plan.update!(release:)
         entries.each do |entry|
           ManifestEntry.create!(
             release:,
@@ -78,7 +85,7 @@ module Publishing
         end
         release.update!(finalized_at: now)
         site.update!(current_release: release)
-        publish_plan.update!(release:, state: "finalized", finalized_at: now)
+        publish_plan.update!(state: "finalized", finalized_at: now)
         FinalizeResult.new(release:, created: true)
       end
     end

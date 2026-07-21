@@ -34,6 +34,14 @@ func TestReleaseClientRejectsInconsistentHistoryAndRollbackResults(t *testing.T)
 			},
 		},
 		{
+			name: "terminal history omits an older current Release",
+			body: `{"site":{"slug":"first-site","current_release_number":1},"releases":[{"id":23,"number":2,"manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","finalized_at":"2026-07-20T12:02:00Z","current":false,"files":1,"bytes":1}],"pagination":{"limit":1,"next_before":null}}`,
+			call: func(client *api.Client) error {
+				_, err := client.ListReleases(context.Background(), "first-site", 1, 0)
+				return err
+			},
+		},
+		{
 			name: "history exposes Releases without a current pointer",
 			body: `{"site":{"slug":"first-site","current_release_number":null},"releases":[{"id":23,"number":2,"manifest_sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","finalized_at":"2026-07-20T12:02:00Z","current":false,"files":1,"bytes":1}],"pagination":{"limit":1,"next_before":null}}`,
 			call: func(client *api.Client) error {

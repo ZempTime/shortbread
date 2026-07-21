@@ -16,7 +16,7 @@ type operationKey struct {
 	value string
 }
 
-func acquireOperationKey(runtime Runtime, parts ...string) (operationKey, error) {
+func acquireOperationKey(runtime Runtime, restart bool, parts ...string) (operationKey, error) {
 	if runtime.Random == nil {
 		return operationKey{}, errors.New("randomness unavailable")
 	}
@@ -33,6 +33,11 @@ func acquireOperationKey(runtime Runtime, parts ...string) (operationKey, error)
 	}
 	identity := sha256.Sum256([]byte(strings.Join(parts, "\x00")))
 	path := filepath.Join(root, hex.EncodeToString(identity[:])+".key")
+	if restart {
+		if err := os.Remove(path); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return operationKey{}, err
+		}
+	}
 	if stored, err := os.ReadFile(path); err == nil {
 		value := strings.TrimSpace(string(stored))
 		if validOperationKey(value) {
@@ -51,11 +56,14 @@ func acquireOperationKey(runtime Runtime, parts ...string) (operationKey, error)
 		return operationKey{}, err
 	}
 	value := base64.RawURLEncoding.EncodeToString(entropy[:])
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
-	if errors.Is(err, os.ErrExist) {
-		return acquireOperationKey(runtime, parts...)
-	}
+	file, err := os.CreateTemp(root, ".operation-key-*")
 	if err != nil {
+		return operationKey{}, err
+	}
+	temporaryPath := file.Name()
+	defer os.Remove(temporaryPath)
+	if err := file.Chmod(0o600); err != nil {
+		_ = file.Close()
 		return operationKey{}, err
 	}
 	if _, err = file.WriteString(value + "\n"); err == nil {
@@ -63,12 +71,19 @@ func acquireOperationKey(runtime Runtime, parts ...string) (operationKey, error)
 	}
 	closeErr := file.Close()
 	if err != nil {
-		_ = os.Remove(path)
 		return operationKey{}, err
 	}
 	if closeErr != nil {
-		_ = os.Remove(path)
 		return operationKey{}, closeErr
+	}
+	if err := os.Link(temporaryPath, path); errors.Is(err, os.ErrExist) {
+		stored, readErr := os.ReadFile(path)
+		if readErr != nil || !validOperationKey(strings.TrimSpace(string(stored))) {
+			return operationKey{}, errors.New("concurrent operation key unavailable")
+		}
+		return operationKey{path: path, value: strings.TrimSpace(string(stored))}, nil
+	} else if err != nil {
+		return operationKey{}, err
 	}
 	return operationKey{path: path, value: value}, nil
 }

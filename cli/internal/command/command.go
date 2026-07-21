@@ -313,6 +313,7 @@ func newInviteCommand(runtime Runtime, server *string, jsonOutput *bool, deps de
 
 func newPublishCommand(runtime Runtime, server *string, jsonOutput *bool) *cobra.Command {
 	var siteSlug string
+	var newOperation bool
 	publish := &cobra.Command{
 		Use:          "publish <directory>",
 		Short:        "Publish a Bundle as an immutable Release",
@@ -340,7 +341,7 @@ func newPublishCommand(runtime Runtime, server *string, jsonOutput *bool) *cobra
 			if err != nil {
 				return &failureError{failure: internalFailure}
 			}
-			key, err := acquireOperationKey(runtime, "publish", *server, siteSlug, string(manifestIdentity))
+			key, err := acquireOperationKey(runtime, newOperation, "publish", *server, siteSlug, string(manifestIdentity))
 			if err != nil {
 				return &failureError{failure: internalFailure}
 			}
@@ -389,6 +390,7 @@ func newPublishCommand(runtime Runtime, server *string, jsonOutput *bool) *cobra
 		},
 	}
 	publish.Flags().StringVar(&siteSlug, "site", "", "Site slug")
+	publish.Flags().BoolVar(&newOperation, "new-operation", false, "replace an expired or abandoned publish retry")
 	return publish
 }
 

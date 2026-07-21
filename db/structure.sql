@@ -48,7 +48,7 @@ BEGIN
   IF TG_OP <> 'INSERT' THEN
     RAISE EXCEPTION 'Shortbread immutable Manifest Entry rows cannot be changed' USING ERRCODE = '55000';
   END IF;
-  SELECT finalized_at INTO parent_finalized_at FROM releases WHERE id = NEW.release_id;
+  SELECT finalized_at INTO parent_finalized_at FROM releases WHERE id = NEW.release_id FOR UPDATE;
   IF parent_finalized_at IS NOT NULL THEN
     RAISE EXCEPTION 'Manifest Entries cannot be added to a finalized Release' USING ERRCODE = '55000';
   END IF;
@@ -65,13 +65,40 @@ CREATE FUNCTION public.shortbread_guard_publish_plan_lifecycle() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.state <> 'open' OR NEW.release_id IS NOT NULL OR NEW.finalized_at IS NOT NULL THEN
+      RAISE EXCEPTION 'Publish Plan rows must begin open and unbound' USING ERRCODE = '55000';
+    END IF;
+    RETURN NEW;
+  END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'Publish Plan idempotency rows cannot be deleted' USING ERRCODE = '55000';
   END IF;
   IF OLD.state = 'open'
-    AND NEW.state = 'finalized'
+    AND NEW.state = 'open'
     AND OLD.release_id IS NULL
     AND NEW.release_id IS NOT NULL
+    AND OLD.finalized_at IS NULL
+    AND NEW.finalized_at IS NULL
+    AND OLD.site_id IS NOT DISTINCT FROM NEW.site_id
+    AND OLD.base_release_id IS NOT DISTINCT FROM NEW.base_release_id
+    AND OLD.idempotency_key_digest IS NOT DISTINCT FROM NEW.idempotency_key_digest
+    AND OLD.manifest_sha256 IS NOT DISTINCT FROM NEW.manifest_sha256
+    AND OLD.manifest IS NOT DISTINCT FROM NEW.manifest
+    AND OLD.expires_at IS NOT DISTINCT FROM NEW.expires_at
+    AND EXISTS (
+      SELECT 1 FROM releases
+      WHERE id = NEW.release_id
+        AND site_id = NEW.site_id
+        AND finalized_at IS NULL
+        AND manifest_sha256 = NEW.manifest_sha256
+    ) THEN
+    RETURN NEW;
+  END IF;
+  IF OLD.state = 'open'
+    AND NEW.state = 'finalized'
+    AND OLD.release_id IS NOT NULL
+    AND NEW.release_id = OLD.release_id
     AND OLD.finalized_at IS NULL
     AND NEW.finalized_at IS NOT NULL
     AND OLD.site_id IS NOT DISTINCT FROM NEW.site_id
@@ -79,7 +106,14 @@ BEGIN
     AND OLD.idempotency_key_digest IS NOT DISTINCT FROM NEW.idempotency_key_digest
     AND OLD.manifest_sha256 IS NOT DISTINCT FROM NEW.manifest_sha256
     AND OLD.manifest IS NOT DISTINCT FROM NEW.manifest
-    AND OLD.expires_at IS NOT DISTINCT FROM NEW.expires_at THEN
+    AND OLD.expires_at IS NOT DISTINCT FROM NEW.expires_at
+    AND EXISTS (
+      SELECT 1 FROM releases
+      WHERE id = NEW.release_id
+        AND site_id = NEW.site_id
+        AND finalized_at IS NOT NULL
+        AND manifest_sha256 = NEW.manifest_sha256
+    ) THEN
     RETURN NEW;
   END IF;
   RAISE EXCEPTION 'Publish Plan rows permit only exact finalization' USING ERRCODE = '55000';
@@ -95,6 +129,12 @@ CREATE FUNCTION public.shortbread_guard_release_lifecycle() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
+  IF TG_OP = 'INSERT' THEN
+    IF NEW.finalized_at IS NOT NULL THEN
+      RAISE EXCEPTION 'Release rows must be assembled before finalization' USING ERRCODE = '55000';
+    END IF;
+    RETURN NEW;
+  END IF;
   IF TG_OP = 'DELETE' THEN
     RAISE EXCEPTION 'Shortbread immutable Release rows cannot be deleted' USING ERRCODE = '55000';
   END IF;
@@ -102,7 +142,30 @@ BEGIN
     AND NEW.finalized_at IS NOT NULL
     AND OLD.site_id IS NOT DISTINCT FROM NEW.site_id
     AND OLD.number IS NOT DISTINCT FROM NEW.number
-    AND OLD.manifest_sha256 IS NOT DISTINCT FROM NEW.manifest_sha256 THEN
+    AND OLD.manifest_sha256 IS NOT DISTINCT FROM NEW.manifest_sha256
+    AND EXISTS (
+      SELECT 1
+      FROM publish_plans plan
+      WHERE plan.release_id = OLD.id
+        AND plan.state = 'open'
+        AND plan.site_id = OLD.site_id
+        AND plan.manifest_sha256 = OLD.manifest_sha256
+        AND jsonb_array_length(plan.manifest->'entries') = (
+          SELECT COUNT(*) FROM manifest_entries WHERE release_id = OLD.id
+        )
+        AND NOT EXISTS (
+          SELECT 1
+          FROM jsonb_array_elements(plan.manifest->'entries') expected
+          LEFT JOIN manifest_entries entry
+            ON entry.release_id = OLD.id AND entry.path = expected->>'path'
+          LEFT JOIN blobs blob ON blob.id = entry.blob_id
+          WHERE entry.id IS NULL
+            OR blob.sha256 <> expected->>'sha256'
+            OR entry.byte_size <> (expected->>'size')::bigint
+            OR entry.content_type <> expected->>'content_type'
+            OR entry.offline_policy <> expected->>'offline_policy'
+        )
+    ) THEN
     RETURN NEW;
   END IF;
   RAISE EXCEPTION 'Shortbread immutable Release rows cannot be updated' USING ERRCODE = '55000';
@@ -912,14 +975,14 @@ CREATE TRIGGER shortbread_monotonic_release_number BEFORE INSERT ON public.relea
 -- Name: publish_plans shortbread_publish_plan_lifecycle; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER shortbread_publish_plan_lifecycle BEFORE DELETE OR UPDATE ON public.publish_plans FOR EACH ROW EXECUTE FUNCTION public.shortbread_guard_publish_plan_lifecycle();
+CREATE TRIGGER shortbread_publish_plan_lifecycle BEFORE INSERT OR DELETE OR UPDATE ON public.publish_plans FOR EACH ROW EXECUTE FUNCTION public.shortbread_guard_publish_plan_lifecycle();
 
 
 --
 -- Name: releases shortbread_release_lifecycle; Type: TRIGGER; Schema: public; Owner: -
 --
 
-CREATE TRIGGER shortbread_release_lifecycle BEFORE DELETE OR UPDATE ON public.releases FOR EACH ROW EXECUTE FUNCTION public.shortbread_guard_release_lifecycle();
+CREATE TRIGGER shortbread_release_lifecycle BEFORE INSERT OR DELETE OR UPDATE ON public.releases FOR EACH ROW EXECUTE FUNCTION public.shortbread_guard_release_lifecycle();
 
 
 --
