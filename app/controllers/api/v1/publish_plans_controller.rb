@@ -39,7 +39,7 @@ module Api
       end
 
       def missing_entries(publish_plan)
-        blob_store = LocalBlobStore.new
+        blob_store = Shortbread::BlobStores.build
         publish_plan.manifest.fetch("entries").uniq { |entry| entry.fetch("sha256") }.reject do |entry|
           blob = Blob.find_by(sha256: entry.fetch("sha256"))
           blob && blob.byte_size == entry.fetch("size") &&

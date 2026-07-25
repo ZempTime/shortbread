@@ -14,7 +14,7 @@ class SiteContentsController < ActionController::Base
 
     serve(entry)
   rescue Shortbread::Hosts::InvalidHost, SiteSession::Rejected,
-    LocalBlobStore::ContentMismatch, LocalBlobStore::StorageFailure
+    Shortbread::BlobStore::ContentMismatch, Shortbread::BlobStore::StorageFailure
     not_found
   end
 
@@ -56,7 +56,7 @@ class SiteContentsController < ActionController::Base
   def chunked_body(io)
     Enumerator.new do |chunks|
       begin
-        while (chunk = io.read(LocalBlobStore::CHUNK_SIZE))
+        while (chunk = io.read(Shortbread::BlobStore::CHUNK_SIZE))
           chunks << chunk unless chunk.empty?
         end
       ensure
@@ -66,7 +66,7 @@ class SiteContentsController < ActionController::Base
   end
 
   def blob_store
-    @blob_store ||= LocalBlobStore.new
+    @blob_store ||= Shortbread::BlobStores.build
   end
 
   def not_found

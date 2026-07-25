@@ -1,3 +1,7 @@
+# NOTE FROM THE AUTHOR:
+
+this repo is a big experiment in trying and using different AI methodologies to ship things.
+
 # Shortbread
 
 Private little websites for the people you choose.

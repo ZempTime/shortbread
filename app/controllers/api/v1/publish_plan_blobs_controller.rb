@@ -18,16 +18,16 @@ module Api
         )
         persist_blob!(entry:, storage_key:)
         head :no_content
-      rescue LocalBlobStore::ContentMismatch
+      rescue Shortbread::BlobStore::ContentMismatch
         render_error("blob_content_mismatch", :unprocessable_entity)
-      rescue LocalBlobStore::StorageFailure
+      rescue Shortbread::BlobStore::StorageFailure
         render_error("blob_storage_failed", :service_unavailable)
       end
 
       private
 
       def blob_store
-        @blob_store ||= LocalBlobStore.new
+        @blob_store ||= Shortbread::BlobStores.build
       end
 
       def persist_blob!(entry:, storage_key:)
@@ -39,7 +39,7 @@ module Api
       rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotUnique
         blob = Blob.find_by(sha256: entry.fetch("sha256"))
         expected = blob && blob.byte_size == entry.fetch("size") && blob.storage_key == storage_key
-        raise LocalBlobStore::StorageFailure unless expected
+        raise Shortbread::BlobStore::StorageFailure unless expected
       end
 
       def render_error(code, status)

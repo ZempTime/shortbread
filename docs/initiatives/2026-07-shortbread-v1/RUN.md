@@ -1,5 +1,11 @@
 # Run Manifest
 
+> **SUPERSEDED 2026-07-25.** The Operator redirected the product to a plannotator-shaped
+> annotation and review tool. This initiative is closed to new execution; it remains as
+> acceptance history and as an inventory of what was built. **Do not resume any unit in this
+> graph.** Current direction lives in
+> [`docs/initiatives/2026-07-tater-tots-redirect/`](../2026-07-tater-tots-redirect/README.md).
+
 | Field | Value |
 |---|---|
 | Run | `2026-07-18-shortbread-v1` |

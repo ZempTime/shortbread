@@ -1,0 +1,24 @@
+{
+  "name": "web",
+  "billing": { "deploymentPlan": "$NF_PLAN_WEB" },
+  "vcsData": {
+    "projectUrl": "https://github.com/$GITHUB_REPO",
+    "projectType": "github",
+    "projectBranch": "main"
+  },
+  "buildSettings": {
+    "dockerfile": {
+      "dockerFilePath": "/Dockerfile",
+      "dockerWorkDir": "/"
+    }
+  },
+  "deployment": { "instances": 1 },
+  "ports": [
+    { "name": "p01", "internalPort": 3000, "public": true, "protocol": "HTTP" }
+  ],
+  "runtimeEnvironment": {
+    "SHORTBREAD_APEX_HOST": "$DOMAIN",
+    "SHORTBREAD_BLOB_STORE": "r2",
+    "WEB_CONCURRENCY": "2"
+  }
+}
