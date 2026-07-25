@@ -1,6 +1,14 @@
 # NOTE FROM THE AUTHOR:
 
 this repo is a big experiment in trying and using different AI methodologies to ship things.
+it's more a sensemaking expedition than anything, with a (hopefully) simple and usable idea at the end.
+there isn't much structure here. just vibes, and "I wonder how legible this approach might be"
+
+some things I tried:
+- ICP / "self-harness"
+- Codex 5.6 ultra mode
+- Matt Pocock skills
+- Opus 5
 
 # Shortbread
 
