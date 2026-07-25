@@ -7,6 +7,7 @@ Rails.application.routes.draw do
   get "invitations/:locator", to: "invitation_previews#show"
   post "invitations/:locator/accept", to: "invitation_acceptances#create"
   post "_shortbread/session", to: "site_sessions#create"
+  post "_shortbread/comments", to: "comments#create"
   get "/", to: "site_contents#show"
 
   namespace :api do

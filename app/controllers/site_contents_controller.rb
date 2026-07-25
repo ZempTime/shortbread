@@ -1,37 +1,25 @@
 # frozen_string_literal: true
 
 class SiteContentsController < ActionController::Base
+  include SiteAuthenticated
+
   def show
-    host = Shortbread::Hosts.parse(host: request.host, scheme: request.scheme, port: request.port)
-    return not_found unless host.kind == :site
+    return not_found unless authenticate_site!
 
-    site = Site.find_by(slug: host.site_slug)
-    return not_found unless site
-
-    authenticate!(host:, site:)
     manifest_path = Shortbread::ManifestPaths.normalize(params[:path])
     return not_found unless manifest_path
 
-    entry = current_entry(site, manifest_path)
+    entry = current_entry(current_site, manifest_path)
     return not_found unless entry
 
     serve(entry)
   rescue Shortbread::Hosts::InvalidHost, SiteSession::Rejected,
-    Shortbread::BlobStore::ContentMismatch, Shortbread::BlobStore::StorageFailure
+    Shortbread::BlobStore::ContentMismatch, Shortbread::BlobStore::StorageFailure,
+    ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid
     not_found
   end
 
   private
-
-  def authenticate!(host:, site:)
-    secure = request.ssl?
-    SiteSession.authenticate(
-      token: cookies[SiteSession.cookie_name(secure:)],
-      audience: host.site_origin,
-      site:,
-      now: Time.current
-    )
-  end
 
   def current_entry(site, manifest_path)
     release = site.current_release

@@ -106,6 +106,24 @@ class MultiPageSiteContentTest < ActionDispatch::IntegrationTest
     end
   end
 
+  # The catch-all route puts every unmatched Site path through this controller, including probes
+  # like /robots.txt. An unreachable database must still fail closed rather than surfacing a 500.
+  test "a Site path fails closed when the database is unreachable" do
+    pages = { "index.html" => "<h1>PRIVATE_INDEX</h1>" }
+
+    with_multi_page_site(pages:) do |site, grant, _digests|
+      host! "#{site.slug}.sites.localhost"
+      authenticate(grant:, site:)
+
+      Site.stub(:find_by, ->(*) { raise ActiveRecord::ConnectionNotEstablished }) do
+        get "/robots.txt"
+      end
+
+      assert_response :not_found
+      assert_empty response.body
+    end
+  end
+
   private
 
   def with_multi_page_site(pages:, slug: "first-site")
