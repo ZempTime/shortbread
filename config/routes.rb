@@ -8,6 +8,8 @@ Rails.application.routes.draw do
   post "invitations/:locator/accept", to: "invitation_acceptances#create"
   post "_shortbread/session", to: "site_sessions#create"
   post "_shortbread/comments", to: "comments#create"
+  get "_shortbread/comments", to: "comments#index"
+  get "_shortbread/review.js", to: "review_surfaces#show", format: false, defaults: { format: "js" }
   get "/", to: "site_contents#show"
 
   namespace :api do

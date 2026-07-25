@@ -5,6 +5,17 @@ class CommentsController < ActionController::Base
 
   skip_forgery_protection
 
+  def index
+    return not_found unless authenticate_site!
+
+    release = current_site.current_release
+    return not_found unless release
+
+    render json: { comments: CommentPlacements.call(release:, path: params[:path]) }
+  rescue SiteSession::Rejected, Shortbread::Hosts::InvalidHost
+    not_found
+  end
+
   def create
     return not_found unless authenticate_site!
 

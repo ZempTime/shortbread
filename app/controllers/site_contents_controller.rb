@@ -32,16 +32,32 @@ class SiteContentsController < ActionController::Base
       sha256: entry.blob.sha256,
       byte_size: entry.byte_size
     )
+    reviewable = reviewable?(entry)
+    body = reviewable ? ReviewSurface.inject(io.read.force_encoding(Encoding::UTF_8)) : nil
+
     response.headers["Content-Type"] = entry.content_type
-    response.headers["Content-Length"] = entry.byte_size.to_s
+    # The ETag stays the Blob digest: the Release is content-addressed to the uploaded bytes, and
+    # the review surface is a property of this response rather than of the stored content.
+    response.headers["Content-Length"] = (reviewable ? body.bytesize : entry.byte_size).to_s
     response.headers["ETag"] = %Q("#{entry.blob.sha256}")
     response.headers["Cache-Control"] = "no-store"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.status = :ok
-    self.response_body = request.head? ? [] : chunked_body(io)
-    io = nil unless request.head?
+
+    if request.head?
+      self.response_body = []
+    elsif reviewable
+      self.response_body = [ body ]
+    else
+      self.response_body = chunked_body(io)
+      io = nil
+    end
   ensure
     io&.close
+  end
+
+  def reviewable?(entry)
+    entry.content_type.split(";").first.to_s.strip.casecmp?("text/html")
   end
 
   def chunked_body(io)
