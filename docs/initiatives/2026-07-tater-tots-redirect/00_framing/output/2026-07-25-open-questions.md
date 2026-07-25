@@ -65,6 +65,10 @@ Specific sub-questions:
 
 **In parallel — they do not block each other:**
 
+Both tracks now have written handoffs:
+[Track A](2026-07-25-handoff-track-a-anchoring.md) ·
+[Track B](2026-07-25-handoff-track-b-infra.md)
+
 **Track A: prototype the anchoring model** (Chris's chosen starting point)
 Throwaway prototype per the `prototype` skill. Answer: what does a range-anchored annotation on
 an immutable Release feel like, and what happens across a republish? Cheap to get wrong now,

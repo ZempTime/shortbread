@@ -15,6 +15,15 @@ Read in this order:
 3. [`00_framing/output/2026-07-25-deployment-findings.md`](00_framing/output/2026-07-25-deployment-findings.md) — Northflank/R2/DNS facts, unaffected by the redirect
 4. [`00_framing/output/2026-07-25-open-questions.md`](00_framing/output/2026-07-25-open-questions.md) — what is undecided and what to do next
 
+## Ready-to-start work
+
+Two independent tracks; neither blocks the other.
+
+- [Track A — prototype the anchoring model](00_framing/output/2026-07-25-handoff-track-a-anchoring.md)
+  — throwaway prototype answering the one design question everything rests on. Gates the PRD.
+- [Track B — R2 blob port and Northflank infra](00_framing/output/2026-07-25-handoff-track-b-infra.md)
+  — production implementation, two sequential units. Needed under any product framing.
+
 ## Relationship to Shortbread v1
 
 The v1 initiative is paused with U03 integrated and no controller active. Its PRD, ticket
