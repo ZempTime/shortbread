@@ -2,7 +2,9 @@
 
 **Goal:** Redirect Shortbread from private-site hosting to a plannotator-shaped annotation and review product, keeping the parts of the existing build that still serve that goal.
 
-**Status:** Framing only. No implementation, no controller, no PRD yet. Nothing in this workspace has been implemented.
+**Status:** Spec published, not yet decomposed. No implementation, no controller, no child tickets. Nothing in this workspace has been implemented.
+
+**Current stage:** `01_spec` complete — [PRD #64: Range-anchored Comments](https://github.com/ZempTime/shortbread/issues/64). Track A (anchoring prototype) is answered; Track B (infra) is independent and unaffected. Next is `to-tickets`.
 
 **Why a new workspace:** This is a product-direction change, not an amendment. `docs/initiatives/2026-07-shortbread-v1/RUN.md` names product-scope change as a "true stop" requiring explicit operator direction. Chris gave that direction on 2026-07-25. The v1 workspace stays frozen as history; this workspace owns the new direction.
 
@@ -19,8 +21,9 @@ Read in this order:
 
 Two independent tracks; neither blocks the other.
 
-- [Track A — prototype the anchoring model](00_framing/output/2026-07-25-handoff-track-a-anchoring.md)
-  — throwaway prototype answering the one design question everything rests on. Gates the PRD.
+- ~~[Track A — prototype the anchoring model](00_framing/output/2026-07-25-handoff-track-a-anchoring.md)~~
+  — **done.** Findings: [`2026-07-25-anchoring-prototype-findings.md`](00_framing/output/2026-07-25-anchoring-prototype-findings.md).
+  Prototype code on branch `prototype/anchoring-2026-07-25`. The PRD it gated is now published.
 - [Track B — R2 blob port and Northflank infra](00_framing/output/2026-07-25-handoff-track-b-infra.md)
   — production implementation, two sequential units. Needed under any product framing.
 

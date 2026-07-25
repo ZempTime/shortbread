@@ -65,8 +65,12 @@ The single flat chronological conversation attached to a Site across its Release
 _Avoid_: Inbox, review, approval workflow
 
 **Comment**:
-One append-only message in a Feedback Thread, attributed to a Person and anchored automatically to a Release and Site path.
+One append-only message in a Feedback Thread, attributed to a Person and anchored to a Release and Site path, optionally to a range of text within that path.
 _Avoid_: Reply, annotation, task
+
+**Anchor**:
+The immutable record of which text a Comment refers to within one Release and path, stored as a quote with surrounding context and resolvable to one of four states: exact, moved, ambiguous, or orphaned.
+_Avoid_: Selection, highlight, range when naming the record
 
 **View Receipt**:
 An Owner-only record that a Viewer successfully opened a particular Release.
