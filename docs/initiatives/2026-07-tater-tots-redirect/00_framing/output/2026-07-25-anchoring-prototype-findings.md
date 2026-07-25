@@ -9,12 +9,17 @@
 that selection stored so it still points at the right text later — and what happens when the
 author publishes a new Release?
 
-**Verdict:** the approach is sound. Anchor to the **source bytes** of a specific `(Release, path)`
-with a **quote + prefix/suffix + offset + block index** composite, resolve through **ordered
-tiers that each report how they succeeded**, and treat carry-forward as **minting a new anchor
-against Release N+1** rather than mutating the original. Four defects surfaced while building it;
-three were real design errors, and one of them was the exact plannotator failure reproduced in my
-own first-cut model.
+**Verdict:** the approach is sound. Anchor to a specific `(Release, path)` with a **quote +
+prefix/suffix + offset + block index** composite, and resolve through **ordered tiers that each
+report how they succeeded**. Four defects surfaced while building it; three were real design
+errors, and one of them was the exact plannotator failure reproduced in my own first-cut model.
+
+**Two decisions were taken after the prototype ran and supersede parts of it:**
+
+1. **Release-scoped, not carry-forward** — annotations belong to the Release they were made on;
+   continuity comes from a diff view. See "Decision: Release-scoped" below.
+2. **HTML Releases are in v1**, anchoring to *extracted visible text* rather than source bytes.
+   This is **not yet validated** — see "Open: extracted-text anchoring" below.
 
 ---
 
@@ -32,12 +37,19 @@ Anchor = Struct.new(
 
 Four resolution states, all first-class in the data model:
 
-| status | meaning | Viewer sees | Owner CLI sees |
+Within its own Release, an anchor resolves to place the highlight. Against a *later* Release, the
+same resolution runs to classify the comment for the diff view:
+
+| status | meaning | within its own Release | in the Release N→N+1 diff view |
 | --- | --- | --- | --- |
-| `exact` | offset + both context sides agree, uniquely | highlight in place | normal comment |
-| `moved` | text found elsewhere, context corroborates | highlight + "text moved" badge | comment + `anchor: moved` |
-| `ambiguous` | ≥2 equally-good candidates, nothing distinguishes them | unplaced tray | `UNPLACED`, with last-known-good |
-| `orphaned` | quote gone, or context cannot confirm identity | unplaced tray with original quote | `ORPHANED`, still anchored on Release N |
+| `exact` | offset + both context sides agree, uniquely | highlight in place | "text unchanged" |
+| `moved` | text found elsewhere, context corroborates | highlight in place | "text unchanged, moved in the document" |
+| `ambiguous` | ≥2 equally-good candidates, nothing distinguishes them | unplaced tray | "cannot tell — review manually" |
+| `orphaned` | quote gone, or context cannot confirm identity | unplaced tray with original quote | "text you changed" |
+
+`ambiguous` and `orphaned` are informational in the diff view, not a queue of things to rescue —
+nothing is being placed on N+1, so there is nothing to fix. They tell the author which parts of
+the previous conversation their edit invalidated.
 
 ### Why each field earns its place
 
@@ -53,23 +65,35 @@ Four resolution states, all first-class in the data model:
   context. It resolved the duplicated-verbatim-block case. I nearly cut it; the pathological
   scenario 7 is what kept it.
 
-### Source, not rendered HTML
+### Source, not rendered HTML — for markdown Releases
 
-Confirmed. Anchors point at the markdown **source** bytes, matching what the Release is
-content-addressed to. `Release#manifest_sha256` + `ManifestEntry#path` → `Blob#sha256` already
+> Scoped by the later decision to support HTML Releases in v1. This section's conclusion holds
+> for **markdown** Releases. For prebuilt HTML Releases there is no separate source layer, and
+> the chosen approach is extracted-text anchoring — unvalidated, see "Open" below.
+
+Confirmed for markdown. Anchors point at the markdown **source** bytes, matching what the Release
+is content-addressed to. `Release#manifest_sha256` + `ManifestEntry#path` → `Blob#sha256` already
 resolves to an exact, unchanging byte sequence, so a source anchor against Release N is
 permanently verifiable server-side. Projecting into the render is a display concern and can
 change freely without invalidating stored anchors. Anchoring into rendered HTML would have made
 every renderer change a silent data migration.
 
-### Carry-forward across a republish: hybrid, with the anchor re-minted
+### Across a republish: Release-scoped, with resolution used for a diff view
 
-The original anchor is **immutable and stays bound to Release N** — same discipline as
-`attr_readonly` on `Release`. Viewing Release N always shows the comment exactly where it was
-left, forever. Carrying forward *mints a new anchor* against Release N+1 when resolution
-confidently places it, and records `orphaned` on N+1 when it does not. Nothing is ever lost or
-overwritten; a Comment can be placed on N and orphaned on N+1 simultaneously, which is the honest
-representation.
+> **Decided 2026-07-25, after the prototype.** This section supersedes the prototype's original
+> recommendation of hybrid carry-forward. See "Decision: Release-scoped" below for the reasoning.
+
+Annotations belong to the Release they were made against, period. Publishing Release N+1 starts
+with no annotations. Continuity comes from a **diff view** between N and N+1, not from
+re-anchoring.
+
+The anchor is **immutable and stays bound to Release N** — same discipline as `attr_readonly` on
+`Release`. Viewing Release N always shows its comments exactly where they were left, forever.
+
+Resolution is still needed, but for **classification rather than placement**: to tell the author
+"2 of these 12 comments touch text you changed, 10 don't," each Release N anchor is resolved
+against Release N+1 and its status reported. No new anchor is minted and nothing is painted on
+N+1.
 
 ---
 
@@ -147,10 +171,55 @@ name claims.
   becomes a permanent tuning liability. The immutable Release means the reviewer's original
   context is never lost, so an orphan is always recoverable by hand — a much better failure mode.
   Revisit only if orphan rates prove painful in practice.
-- **Release-scoped only (no carry-forward).** Honest and simple, and I nearly recommended it. But
-  the sweep shows context-based carry-forward succeeding cleanly on the common cases (an author
-  edits one section; comments on the other twelve should not all die). Rejecting carry-forward
-  would discard that for a problem the orphan state already solves.
+- **Hybrid carry-forward.** This is what the prototype originally recommended, and it was
+  **rejected in favour of Release-scoped** — see below. The sweep did show context-based
+  carry-forward succeeding on the common cases, but succeeding-in-a-prototype is a weaker claim
+  than it looks: every defect found here was a carry-forward defect, and each was a wrong
+  *placement* rather than a missing one.
+
+---
+
+## Decision: Release-scoped (2026-07-25, post-prototype)
+
+The prototype recommended hybrid carry-forward. After reviewing it we chose **Release-scoped**
+storage with a diff view. Recorded here because the prototype's own text argues the other way.
+
+**Why.** Storage is Release-scoped in *both* models — carry-forward mints a new anchor rather
+than mutating the original, so it was never a different data model, only a read-time convenience
+layered on top. That makes carry-forward a deferrable feature, not a foundational choice, and it
+can be added later with no migration. Given that, the question became "do we run the re-resolve
+step at publish time yet," and the answer for v1 is no:
+
+- Every defect the prototype found was a carry-forward defect, and each produced a *wrong
+  placement* rather than a missing one. Release-scoped cannot produce them.
+- A comment on Release 3's wording is about Release 3's wording. Carrying it onto Release 4
+  quietly asserts it still applies, which is often false.
+- With HTML Releases now in v1 scope, carry-forward would have to survive republishes where the
+  markup changed *and* the text moved — a combination the prototype never tested.
+
+**What it costs.** The conversation does not automatically continue across a republish. In the
+motivating case — twelve comments on Release 3, the author fixes two and publishes Release 4 —
+Release 4 starts empty and the ten still-applicable comments are not re-shown in place. The diff
+view mitigates this by telling the author which of the twelve their edit invalidated, but the
+reviewer does not see their prior highlights on the new Release. **If this proves painful in
+practice, carry-forward is the designed remedy and the stored anchors already support it.**
+
+**Consequences for the model.**
+
+- `capture` and `resolve` are kept as-is, and the four states are kept.
+- `carry_forward` is dropped. Nothing mints an anchor against a Release it was not made on.
+- Anchors store the full composite (quote + prefix + suffix + offset + block index) even though
+  Release-scoped placement alone needs less. Those fields are what a future carry-forward and the
+  present diff view both consume; storing less now would mean re-annotating history later.
+- The `orphaned` state stays in the schema even though v1 never needs to rescue anything. The
+  framing was emphatic on this and it holds: retrofitting a state the UI never had to handle is
+  exactly where silent drops appear.
+- The confidence floor (defect 1) still matters. Without it the diff view would report a comment
+  as "text unchanged" when its text was deleted and an identical string elsewhere matched.
+
+`CONTEXT.md` defines a **Feedback Thread** as spanning a Site's Releases. Release-scoped
+*anchors* do not contradict that — the Thread remains one chronological conversation; only the
+highlight placement is Release-bound.
 
 ---
 
@@ -160,9 +229,9 @@ name claims.
   anchor into rendered HTML. The projection direction is argued above but **not empirically
   verified** — it is the obvious next prototype, and it is where a browser-side surprise would
   live (e.g. selections that span rendered elements mapping back to non-contiguous source).
-- **Non-markdown Releases.** Shortbread publishes arbitrary prebuilt HTML directories. This
-  prototype assumed markdown source. Anchoring into a Release whose Blob *is* the HTML — with no
-  separate source — is a genuinely different problem and is unaddressed.
+- **Prebuilt HTML Releases.** This prototype assumed markdown source throughout. HTML Releases
+  were subsequently put in v1 scope; the approach is described under "Open" below and is **not
+  validated**. This is the largest outstanding risk in the model.
 - **Unicode, multi-byte, and grapheme clusters.** All offsets are Ruby character offsets over
   ASCII fixtures. Emoji, combining characters, and CRLF will need explicit decisions.
 - **Whitespace normalization.** Anchors are byte-exact. A reformat (rewrapping prose, changing
@@ -176,6 +245,31 @@ name claims.
   where it breaks.
 
 ---
+
+## Open: extracted-text anchoring for HTML Releases
+
+HTML Releases are in v1. Their Blob *is* the HTML, so there is no source layer to anchor to. The
+chosen approach is to anchor to **extracted visible text plus context** — markup invisible to the
+anchor, so `<em>` becoming `<strong>` or a class being added leaves it intact.
+
+If markdown is *also* extracted to visible text, both document kinds land in one text space and
+the validated resolution core serves both unchanged. That is the appeal, and it is the reason to
+prefer it over raw HTML byte offsets (where a selection spanning a tag puts markup inside the
+quote, and any reformat orphans everything).
+
+**None of this is validated.** A partial extractor exists at `tmp/prototype-anchoring/extract.rb`
+on the prototype branch; it was written but never exercised. The open questions:
+
+1. Does extracted text stay stable across realistic markup churn — reformatting, wrapper divs,
+   changed classes, a different generator version?
+2. Does the text-offset → source-offset map survive well enough to verify an anchor against the
+   content-addressed Blob?
+3. What does a reviewer's DOM selection map back to when it spans element boundaries?
+4. Whitespace collapsing is doing real work in the extractor. How much does that widen or narrow
+   the whitespace-normalization problem noted above?
+
+Question 3 needs a browser and is the UI-branch prototype the original findings called for.
+Questions 1, 2 and 4 can be answered with the existing terminal harness.
 
 ## Boundaries honoured
 
