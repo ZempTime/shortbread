@@ -10,7 +10,7 @@
 | Ticket | Issue | Title | Blocked by | Label |
 |---|---|---|---|---|
 | T1 | [#65](https://github.com/ZempTime/shortbread/issues/65) | A Viewer can comment on selected text and the Owner can pull it | — | `ready-for-agent` |
-| T7 | [#66](https://github.com/ZempTime/shortbread/issues/66) | Validate Anchor capture in a real browser | — | `ready-for-agent` |
+| T7 | [#66](https://github.com/ZempTime/shortbread/issues/66) | Validate Anchor capture in a real browser | — | **closed 2026-07-25** |
 | T2 | [#67](https://github.com/ZempTime/shortbread/issues/67) | Anchors resolve honestly when the document changes | #65 | none |
 | T3 | [#68](https://github.com/ZempTime/shortbread/issues/68) | Multiple and overlapping Comments render without obscuring the document | #65 | none |
 | T5 | [#69](https://github.com/ZempTime/shortbread/issues/69) | A Viewer can comment on a Site without selecting text | #65 | none |
@@ -30,10 +30,17 @@
 
 ## Current frontier
 
-`#65` and `#66`. Both carry `ready-for-agent`; no other ticket does.
+`#65` only. It is the sole ticket carrying `ready-for-agent`.
 
-They touch disjoint surfaces — #66 is test-and-fixture only — so they may run concurrently.
-**Caveat recorded on both issues:** a negative result from #66 re-scopes #65's capture layer.
+**#66 closed 2026-07-25 with a positive outcome** — a live `Selection`/`Range` maps cleanly to
+extracted-text offsets, so the PRD's capture approach survives and **#65 is not re-scoped**. The
+caveat previously recorded here (a negative result re-scopes #65's capture layer) is discharged.
+
+#66 landed on `main` at `53fd83b`, adding `test/browser_capture/` and its outcome doc — test and
+docs surface only, none of #65's reserved files. Whoever claims #65 should branch from current
+`main` and read the Addendum in
+[`2026-07-25-handoff-t1-walking-skeleton.md`](2026-07-25-handoff-t1-walking-skeleton.md), which
+carries three constraints #66 placed on the capture layer.
 
 ## Parent label state
 

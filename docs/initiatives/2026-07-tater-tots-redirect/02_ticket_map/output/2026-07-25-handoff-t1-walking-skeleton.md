@@ -1,20 +1,20 @@
 # Handoff — #65: A Viewer can comment on selected text and the Owner can pull it
 
 **Ticket:** [#65](https://github.com/ZempTime/shortbread/issues/65) · **Parent PRD:** [#64](https://github.com/ZempTime/shortbread/issues/64)
-**Blocked by:** nothing. On the frontier with [#66](https://github.com/ZempTime/shortbread/issues/66).
-**Branch point:** `main` at `2163fb6`.
+**Blocked by:** nothing. [#66](https://github.com/ZempTime/shortbread/issues/66) is closed; this is now the only ticket on the frontier.
+**Branch point:** `main` at `53fd83b` (was `2163fb6`; #66 landed on top — see the Addendum).
 **Use the `implement` skill.**
 
-## Read #66 first
+## #66 is closed — gate resolved, this ticket is NOT re-scoped
 
-[#66](https://github.com/ZempTime/shortbread/issues/66) validates Anchor capture in a real
-browser, and **its result can change this ticket's capture layer**. Before starting:
+**Resolved 2026-07-25.** [#66](https://github.com/ZempTime/shortbread/issues/66) reported a
+**positive** outcome: a live `Selection`/`Range` maps cleanly to extracted-text offsets, and the
+PRD's capture approach survives unchanged. Proceed with this ticket as written.
 
-- If #66 is unstarted, you may proceed — but treat the browser capture mapping as the riskiest
-  part of this slice and build it first, behind the checkpoint below.
-- If #66 is in flight, read its comments before writing capture code.
-- If #66 has reported a negative outcome, **stop and get this ticket re-scoped.** Do not build
-  on an invalidated assumption.
+Read the outcome before writing capture code — it carries three hard constraints on the capture
+layer and one correction to the extractor:
+[`2026-07-25-t7-browser-capture-outcome.md`](./2026-07-25-t7-browser-capture-outcome.md).
+See the **Addendum** at the end of this handoff for what it changes here.
 
 ## Why this is one big ticket
 
@@ -98,7 +98,7 @@ This ticket **reserves** and no other work may touch concurrently:
 - `app/controllers/site_contents_controller.rb`
 - `package.json`
 
-#66 touches none of these, so the two can run in parallel.
+#66 touched none of these, and is now closed — nothing else contends for them.
 
 ## Acceptance criteria
 
@@ -143,3 +143,72 @@ Verbatim from the ticket:
   Its top-level `App.tsx` is verified unextractable; a lower-level seam was reported but never
   verified, and `@plannotator/web-highlighter`'s license was never confirmed. Its anchoring model
   is not adopted regardless.
+
+---
+
+# Addendum — what #66 changed (2026-07-25)
+
+Written after [#66](https://github.com/ZempTime/shortbread/issues/66) closed. The ticket's scope
+and acceptance criteria are **unchanged**; this records what its result constrains, and what went
+stale in the handoff above.
+
+## Branch point moved
+
+`main` is now `53fd83b`, not `2163fb6`. #66 added `test/browser_capture/` and the outcome doc —
+test and docs surface only, and it touches **none** of this ticket's reserved files
+(`config/routes.rb`, `db/schema.rb`, `site_contents_controller.rb`, `package.json`). Branch from
+current `main`.
+
+## Three constraints on the capture layer
+
+From the outcome doc's findings. These are cheap to honour up front and expensive to retrofit:
+
+1. **The client extractor must walk the DOM by tag name only — never `innerText`,
+   `getClientRects`, or any CSS-aware visibility test.** Both extractors emit CSS-hidden text and
+   no browser will select it; that is harmless *only because both sides do it identically*, which
+   keeps offsets in lockstep so the anchor still verifies server-side. Measured: an
+   `innerText`-based extractor diverges from Ruby by 19 characters on a document containing one
+   `display:none` block, silently breaking criterion 4's verification for every Anchor after it.
+2. **Take the stored quote from the extraction, never from `selection.toString()`.** The browser
+   reports `"\n\n"` at a block boundary where extraction has a single synthesised `\n`.
+3. **Normalise selection direction at capture.** On a backwards (right-to-left) drag `anchorNode`
+   follows `focusNode`. Min/max the mapped endpoints. The prototype never considered direction.
+
+## A correction to `extract.rb` you are lifting
+
+`extract.rb` scans tags linearly and therefore emits a block break on a **closing** block tag as
+well as an opening one. Any DOM-walking twin that breaks only on *entering* an element lets the
+whitespace after `</h1>` survive as a space and desyncs every subsequent offset.
+
+This was found on the first run with a browser in the loop, and it is near-invisible at the
+anchoring layer — offsets drift by a few characters while quotes still look plausible. Criterion 6
+exists to catch exactly this class of bug; make sure the conformance check would.
+
+## The harness is evidence, not the TypeScript twin
+
+`test/browser_capture/extract_dom.js` is **plain-JS spike evidence**, not the implementation
+criterion 6 asks for. It deliberately mirrors the Ruby scanner's quirks so disagreements are real
+findings rather than artefacts of two different extractors.
+
+Write the real TypeScript module. Lift the *conformance idea* — drive both extractors over one
+fixture and diff text and offset maps — not the file. That harness is the seed for T2's
+conformance matrix (see the outcome doc's Harvest section).
+
+## Unicode is the largest open gap, and it lands on criterion 6
+
+All #66 fixtures are ASCII. **Ruby character offsets and JavaScript UTF-16 code-unit offsets are
+not the same unit** for astral-plane characters — one emoji is 1 Ruby character and 2 JS code
+units, so a single emoji anywhere earlier in a document desyncs every offset after it.
+
+Criterion 6 requires both implementations exercised; this is where they will disagree first, and
+it is currently untested on both sides. Decide the canonical offset unit explicitly and put a
+non-ASCII case in the conformance fixture set. Related open items from the prototype, still
+untested: combining characters, grapheme clusters, and CRLF.
+
+## Other gaps #66 did not close
+
+Not blockers for this ticket, but do not assume they are covered: a real HTML parser on either
+side (both are hand-rolled scanners); shadow DOM, `<template>`, SVG/MathML, script-injected
+content; `white-space: pre-wrap`/`pre-line` on non-`<pre>` elements, which makes the browser
+preserve whitespace the extractor collapses; iframes; multi-Range selections (Firefox permits
+them, Chrome does not).

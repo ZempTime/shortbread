@@ -310,6 +310,10 @@ Story 11 is existing behavior with no new work; it is covered by regression rath
 
 ## Runnable frontier
 
+> **Status 2026-07-25:** T7 (#66) is **closed** with a positive outcome — the capture approach
+> survives and T1 is **not** re-scoped. **T1 is now the only runnable ticket.** The paragraph
+> below is the graph as published; see `tracker.md` for live frontier state.
+
 **T1** and **T7** are unblocked. They touch disjoint surfaces (T7 is test-and-fixture only) and
 may run concurrently, with the caveat that a T7 negative result re-scopes T1.
 
