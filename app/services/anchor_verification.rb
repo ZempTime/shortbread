@@ -60,20 +60,10 @@ class AnchorVerification
   end
 
   def extracted_text(entry)
-    Shortbread::Extraction.from_html(read_blob(entry)).text
-  end
+    extracted = Shortbread::Extraction.for_entry(entry, blob_store:)
+    reject! unless extracted
 
-  def read_blob(entry)
-    io = blob_store.open_verified(
-      storage_key: entry.blob.storage_key,
-      sha256: entry.blob.sha256,
-      byte_size: entry.byte_size
-    )
-    io.read.force_encoding(Encoding::UTF_8)
-  rescue Shortbread::BlobStore::ContentMismatch, Shortbread::BlobStore::StorageFailure
-    reject!
-  ensure
-    io&.close
+    extracted.text
   end
 
   def integer_offset(value)

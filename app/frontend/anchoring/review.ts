@@ -31,6 +31,16 @@ const documentPath = (): string => {
   return path === '' ? 'index.html' : path
 }
 
+/**
+ * The Release this document was served from, stamped onto the script tag at serve time. An Anchor
+ * is Release-scoped, so capturing one against a guessed Release number would record a value the
+ * PRD calls immutable as a lie — even though the server re-derives the real one on write.
+ */
+const releaseNumber = (): number => {
+  const stamped = document.querySelector('script[data-shortbread-release]')
+  return Number(stamped?.getAttribute('data-shortbread-release') ?? 0)
+}
+
 const styles = `
   .${HIGHLIGHT_CLASS} { background: rgba(250, 204, 21, 0.4); cursor: pointer; }
   .shortbread-review-panel {
@@ -82,7 +92,7 @@ const onSelection = async (panel: HTMLElement): Promise<void> => {
   const anchor = captureFromSelection({
     root: contentRoot(),
     selection,
-    releaseNumber: 0,
+    releaseNumber: releaseNumber(),
     path: documentPath(),
   })
   if (!anchor) return
@@ -154,19 +164,19 @@ const refresh = async (panel: HTMLElement): Promise<void> => {
  * same extraction the server verified against, so a Comment whose text moved is still found and
  * one whose text is gone is reported rather than silently dropped.
  */
-const paint = (comments: StoredComment[]): void => {
-  for (const highlight of Array.from(document.querySelectorAll(`.${HIGHLIGHT_CLASS}`))) {
+export const paint = (comments: StoredComment[], root: HTMLElement = contentRoot()): void => {
+  for (const highlight of Array.from(root.querySelectorAll(`.${HIGHLIGHT_CLASS}`))) {
     highlight.replaceWith(...Array.from(highlight.childNodes))
   }
 
-  const extracted = fromDom(contentRoot())
+  const extracted = fromDom(root)
 
   for (const comment of comments) {
     if (comment.startOffset === null || !comment.quote) continue
 
     const resolution = resolve(
       {
-        releaseNumber: 0,
+        releaseNumber: releaseNumber(),
         path: documentPath(),
         quote: comment.quote,
         prefix: comment.prefix ?? '',
@@ -189,23 +199,57 @@ const highlight = (
   endOffset: number,
   comment: StoredComment,
 ): void => {
-  const start = extracted.map[startOffset]
-  const end = extracted.map[endOffset - 1]
-  if (!start || !end) return
+  // One mark per text node the quote touches, rather than one range across the whole span.
+  // `surroundContents` refuses a range that partially selects an element, and a quote crossing
+  // inline markup — `<em>`, a link — does exactly that, so a single range would silently fail to
+  // paint the most ordinary kind of selection there is.
+  for (const [node, span] of spansByNode(extracted, startOffset, endOffset)) {
+    try {
+      const range = document.createRange()
+      range.setStart(node, span.start)
+      range.setEnd(node, span.end)
 
-  try {
-    const range = document.createRange()
-    range.setStart(start.node, start.offset)
-    range.setEnd(end.node, end.offset + 1)
-
-    const mark = document.createElement('mark')
-    mark.className = HIGHLIGHT_CLASS
-    mark.dataset.commentId = String(comment.id)
-    // Fails on a range that partially selects a non-Text node; those Comments stay in the panel.
-    range.surroundContents(mark)
-  } catch {
-    /* the Comment remains listed in the panel even when it cannot be painted in place */
+      const mark = document.createElement('mark')
+      mark.className = HIGHLIGHT_CLASS
+      mark.dataset.commentId = String(comment.id)
+      range.surroundContents(mark)
+    } catch {
+      /* the Comment remains listed in the panel even where it cannot be painted in place */
+    }
   }
+}
+
+/**
+ * The UTF-16 span each text node contributes to one extracted-text range.
+ *
+ * `map` holds UTF-16 offsets into a node while extraction offsets are code points, so each end
+ * advances by the width of its own code point. Assuming 1 clips an astral character mid-surrogate,
+ * which throws and drops the highlight.
+ */
+const spansByNode = (
+  extracted: ReturnType<typeof fromDom>,
+  startOffset: number,
+  endOffset: number,
+): Map<Text, { start: number; end: number }> => {
+  const spans = new Map<Text, { start: number; end: number }>()
+
+  for (let offset = startOffset; offset < endOffset; offset += 1) {
+    const entry = extracted.map[offset]
+    if (!entry) continue
+
+    const codePoint = entry.node.data.codePointAt(entry.offset)
+    const width = codePoint !== undefined && codePoint > 0xffff ? 2 : 1
+    const existing = spans.get(entry.node)
+
+    if (existing) {
+      existing.start = Math.min(existing.start, entry.offset)
+      existing.end = Math.max(existing.end, entry.offset + width)
+    } else {
+      spans.set(entry.node, { start: entry.offset, end: entry.offset + width })
+    }
+  }
+
+  return spans
 }
 
 const render = (panel: HTMLElement, comments: StoredComment[]): void => {
@@ -235,8 +279,18 @@ const render = (panel: HTMLElement, comments: StoredComment[]): void => {
   }
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', install)
-} else {
-  install()
+// The surface installs itself when injected into a served document. A harness that only wants
+// the painting logic sets this flag first, so importing the module does not build a panel.
+declare global {
+  interface Window {
+    shortbreadReviewSurfaceManualInstall?: boolean
+  }
+}
+
+if (!window.shortbreadReviewSurfaceManualInstall) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', install)
+  } else {
+    install()
+  }
 }

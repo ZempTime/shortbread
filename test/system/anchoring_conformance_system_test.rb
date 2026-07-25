@@ -71,7 +71,64 @@ class AnchoringConformanceSystemTest < ApplicationSystemTestCase
     assert_equal forwards.fetch("startOffset"), backwards.fetch("startOffset")
   end
 
+  # Criterion 3's client half. `paint` maps a resolved offset range back onto real DOM nodes and
+  # wraps it — the step that decides whether a reloaded Comment lands on the words the reviewer
+  # actually selected, and the one that cannot be checked without a DOM.
+  test "a stored Anchor repaints onto the same text it was captured from" do
+    html = "<h1>Deploy notes</h1><p>Every change <em>ships</em> behind a flag.</p>"
+    quote = "ships behind a flag"
+    text = Shortbread::Extraction.from_html(html).text
+
+    painted = paint_in_browser(html:, quote:, start_offset: text.index(quote))
+
+    assert_equal quote, painted, "the Comment repainted onto different text than it anchored to"
+  end
+
+  # An astral character earlier in the document shifts UTF-16 offsets but not code-point offsets.
+  # Painting has to convert, or the highlight clips mid-surrogate and is silently dropped.
+  test "a repaint survives an astral character earlier in the document" do
+    html = "<p>Ship 😀 it.</p><p>Every change ships behind a flag.</p>"
+    quote = "ships behind a flag"
+    text = Shortbread::Extraction.from_html(html).text
+
+    painted = paint_in_browser(html:, quote:, start_offset: text.index(quote))
+
+    assert_equal quote, painted, "an emoji earlier in the document desynced the repaint"
+  end
+
+  test "a repaint whose quote ends on an astral character keeps the whole character" do
+    html = "<p>Ship it 😀</p><p>More text follows.</p>"
+    quote = "Ship it 😀"
+    text = Shortbread::Extraction.from_html(html).text
+
+    painted = paint_in_browser(html:, quote:, start_offset: text.index(quote))
+
+    assert_equal quote, painted, "the highlight clipped an astral character mid-surrogate"
+  end
+
   private
+
+  # Drives the real `paint` over a stored Comment and returns the text actually highlighted.
+  def paint_in_browser(html:, quote:, start_offset:)
+    text = Shortbread::Extraction.from_html(html).text
+    anchor = Shortbread::Anchoring.capture(
+      source: text, start_offset:, length: quote.length, release_number: 1, path: "index.html"
+    )
+    stored = {
+      id: 1, body: "A remark.", person: "Avery", quote: anchor.quote, prefix: anchor.prefix,
+      suffix: anchor.suffix, startOffset: anchor.start_offset, blockIndex: anchor.block_index,
+      blockOffset: anchor.block_offset, placement: "exact"
+    }
+
+    evaluate_with_module(html, <<~JS)
+      const root = document.getElementById('fixture');
+      const comments = [#{stored.to_json}];
+      try { paint(comments, root); } catch (e) { return 'ERROR paint threw: ' + String(e && e.message); }
+      const marks = Array.from(root.querySelectorAll('.shortbread-comment-highlight'));
+      if (marks.length === 0) return 'ERROR nothing was painted';
+      return String(marks.map((mark) => mark.textContent).join(''));
+    JS
+  end
 
   def extract_in_browser(html)
     evaluate_with_module(html, <<~JS)
@@ -128,7 +185,9 @@ class AnchoringConformanceSystemTest < ApplicationSystemTestCase
   # Serves the fixture and the compiled modules from a data URL, so the browser runs the real
   # TypeScript source rather than a hand-copied approximation of it.
   def evaluate_with_module(html, body)
-    visit "data:text/html;charset=utf-8,#{ERB::Util.url_encode("<!doctype html><body><div id='fixture'>#{html}</div></body>")}"
+    document = "<!doctype html><script>window.shortbreadReviewSurfaceManualInstall = true;</script>" \
+      "<body><div id='fixture'>#{html}</div></body>"
+    visit "data:text/html;charset=utf-8,#{ERB::Util.url_encode(document)}"
 
     result = page.evaluate_script(<<~JS)
       (() => {
@@ -146,6 +205,7 @@ class AnchoringConformanceSystemTest < ApplicationSystemTestCase
     app/frontend/anchoring/anchoring.ts
     app/frontend/anchoring/extraction.ts
     app/frontend/anchoring/capture.ts
+    app/frontend/anchoring/review.ts
   ].freeze
 
   # `module.stripTypeScriptTypes` erases annotations without transforming semantics, so the

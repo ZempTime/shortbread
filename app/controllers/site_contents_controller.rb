@@ -33,7 +33,12 @@ class SiteContentsController < ActionController::Base
       byte_size: entry.byte_size
     )
     reviewable = reviewable?(entry)
-    body = reviewable ? ReviewSurface.inject(io.read.force_encoding(Encoding::UTF_8)) : nil
+    body = if reviewable
+      ReviewSurface.inject(
+        io.read.force_encoding(Encoding::UTF_8),
+        release_number: entry.release.number
+      )
+    end
 
     response.headers["Content-Type"] = entry.content_type
     # The ETag stays the Blob digest: the Release is content-addressed to the uploaded bytes, and

@@ -11,7 +11,7 @@ module Shortbread
   # that consulted CSS — `innerText`, `getClientRects` — would silently break server-side
   # verification for every Anchor after a hidden element.
   module Extraction
-    Extracted = Struct.new(:text, :map, keyword_init: true)
+    Extracted = Data.define(:text, :map)
 
     INVISIBLE = %w[script style head title meta link].freeze
 
@@ -28,6 +28,28 @@ module Shortbread
     MAX_ENTITY_LENGTH = 10
 
     module_function
+
+    # The visible text of one Manifest Entry, read through the Blob store's verification so the
+    # bytes an Anchor is checked against are provably the bytes the Release was published with.
+    # Returns nil when the Blob cannot be read, leaving the caller to decide what that means.
+    def for_entry(entry, blob_store:)
+      io = blob_store.open_verified(
+        storage_key: entry.blob.storage_key,
+        sha256: entry.blob.sha256,
+        byte_size: entry.byte_size
+      )
+      from_html(io.read.force_encoding(Encoding::UTF_8))
+    rescue BlobStore::ContentMismatch, BlobStore::StorageFailure
+      nil
+    ensure
+      io&.close
+    end
+
+    # Where in the original bytes a text offset came from, so an Anchor resolved in text space can
+    # be pointed back at the content-addressed Blob.
+    def source_offset(extracted, text_offset)
+      extracted.map[text_offset]
+    end
 
     def from_html(html)
       state = { text: +"", map: [], pre_depth: 0, skip_until: nil }
@@ -47,16 +69,6 @@ module Shortbread
       end
 
       trimmed(state)
-    end
-
-    # Markdown is already visible text; it lands in the same text space so one resolution core
-    # serves both document kinds.
-    def from_markdown(markdown)
-      Extracted.new(text: markdown.dup, map: (0...markdown.length).to_a)
-    end
-
-    def source_offset(extracted, text_offset)
-      extracted.map[text_offset]
     end
 
     def apply_tag(state, tag, index)

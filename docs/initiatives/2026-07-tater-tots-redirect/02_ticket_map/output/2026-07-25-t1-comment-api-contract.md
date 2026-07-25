@@ -12,6 +12,18 @@ natively and the server is what verifies an Anchor against stored bytes, so the 
 canonical; the TypeScript twin converts at the DOM boundary. One astral character (an emoji) is 1
 code point but 2 UTF-16 units, so counting the JavaScript way desyncs every offset after it.
 
+## Review surface injection — Site origin
+
+An HTML response from a Site host carries the review surface as one script tag appended before
+`</body>`, stamped with the Release it was served from:
+
+```html
+<script type="module" data-shortbread-release="2" src="/_shortbread/review.js"></script>
+```
+
+The stored Blob is never rewritten — the Release stays content-addressed to the uploaded bytes and
+the ETag remains the Blob digest. Injection is a property of the response, not of the content.
+
 ## `POST /_shortbread/comments` — Site origin
 
 Requires a valid Grant-backed Site session cookie. Leaves a Comment on the Site's current Release.

@@ -68,20 +68,6 @@ class CommentPlacements
     entry = release.manifest_entries.includes(:blob).find_by(path:)
     return nil unless entry
 
-    bytes = read_blob(entry)
-    bytes && Shortbread::Extraction.from_html(bytes).text
-  end
-
-  def read_blob(entry)
-    io = blob_store.open_verified(
-      storage_key: entry.blob.storage_key,
-      sha256: entry.blob.sha256,
-      byte_size: entry.byte_size
-    )
-    io.read.force_encoding(Encoding::UTF_8)
-  rescue Shortbread::BlobStore::ContentMismatch, Shortbread::BlobStore::StorageFailure
-    nil
-  ensure
-    io&.close
+    Shortbread::Extraction.for_entry(entry, blob_store:)&.text
   end
 end

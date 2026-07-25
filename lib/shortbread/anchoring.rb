@@ -11,16 +11,13 @@ module Shortbread
   # across a republish is presented by the comparison view, never by re-pointing an Anchor.
   module Anchoring
     CONTEXT_LEN = 32
-    STATUSES = %i[exact moved ambiguous orphaned].freeze
 
-    Anchor = Struct.new(
-      :release_number, :path, :quote, :prefix, :suffix, :start_offset, :block_index, :block_offset,
-      keyword_init: true
+    Anchor = Data.define(
+      :release_number, :path, :quote, :prefix, :suffix, :start_offset, :block_index, :block_offset
     )
 
-    Resolution = Struct.new(
-      :status, :start_offset, :end_offset, :confidence, :note, :candidates,
-      keyword_init: true
+    Resolution = Data.define(
+      :status, :start_offset, :end_offset, :confidence, :note, :candidates
     )
 
     module_function

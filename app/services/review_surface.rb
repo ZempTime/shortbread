@@ -22,8 +22,9 @@ class ReviewSurface
   BODY_CLOSE = %r{</body>}i
 
   class << self
-    def inject(html)
-      tag = %(<script type="module" src="#{SCRIPT_PATH}"></script>)
+    def inject(html, release_number:)
+      tag = +%(<script type="module" data-shortbread-release="#{release_number.to_i}" )
+      tag << %(src="#{SCRIPT_PATH}"></script>)
       return html.sub(BODY_CLOSE) { "#{tag}#{Regexp.last_match(0)}" } if html.match?(BODY_CLOSE)
 
       "#{html}#{tag}"
