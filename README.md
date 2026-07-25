@@ -63,7 +63,8 @@ Shortbread is server-private, not zero-knowledge. Saved offline copies may survi
 - stable isolated `<slug>.sites.<apex>` Site origins;
 - immutable content-addressed Releases with rollback;
 - Viewer-controlled atomic Offline Copies;
-- flat Release/path-anchored Comments and Owner-only View Receipts;
+- a review surface where a Viewer selects text and leaves a range-anchored Comment, pulled back through `shortbread feedback pull`;
+- flat Release-scoped Comments and Owner-only View Receipts;
 - Rails 8.1 + Inertia/React/TypeScript app and a single-binary Go CLI;
 - no CMS, build pipeline, anonymous public links, notification system, analytics, or product-controlled AI.
 
