@@ -2,6 +2,14 @@
 
 Shortbread ships one candidate application image with four explicit process roles: `migrate`, `web`, `worker`, and `cable`. The image runs as UID/GID `10001:10001`; PostgreSQL and the private local Blob volume are external dependencies. This is a local, credential-free rehearsal contract. It is not a stable published artifact or a live-provider deployment.
 
+> **Deployment lives elsewhere.** For deploying to a live provider, see
+> [`docs/runbooks/deploy.md`](docs/runbooks/deploy.md) (Northflank + Cloudflare R2 + Netlify DNS),
+> driven by the manifests in `infra/`. That path uses **one** web service plus a migration job, and
+> stores Blobs in R2 rather than on a volume.
+>
+> The Compose path below is **superseded for deployment** and retained for local
+> production-shaped rehearsal, which `bin/production-smoke` depends on.
+
 ## Rehearse the complete stack
 
 Copy the environment template to a private file outside Git, restrict its permissions, and fill every required value:

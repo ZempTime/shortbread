@@ -25,7 +25,13 @@ Two independent tracks; neither blocks the other.
   — **done.** Findings: [`2026-07-25-anchoring-prototype-findings.md`](00_framing/output/2026-07-25-anchoring-prototype-findings.md).
   Prototype code on branch `prototype/anchoring-2026-07-25`. The PRD it gated is now published.
 - [Track B — R2 blob port and Northflank infra](00_framing/output/2026-07-25-handoff-track-b-infra.md)
-  — production implementation, two sequential units. Needed under any product framing.
+  — **B1 done, B2 credential-ready.** B1 landed the Blob store contract, `R2BlobStore`, and
+  config selection with fail-closed production validation. B2 added `infra/` and
+  [`docs/runbooks/deploy.md`](../../runbooks/deploy.md); nothing is deployed and no live
+  resource exists. Verified provider facts (and what stayed unverified):
+  [`2026-07-25-deployment-verification.md`](00_framing/output/2026-07-25-deployment-verification.md).
+  **Blocked from booting** until the four required `ANYCABLE_*` production keys are made
+  conditional — the one-service topology has no cable service to point them at.
 
 ## Relationship to Shortbread v1
 

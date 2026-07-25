@@ -1,0 +1,25 @@
+{
+  "name": "migrate",
+  "billing": { "deploymentPlan": "$NF_PLAN_MIGRATE" },
+  "vcsData": {
+    "projectUrl": "https://github.com/$GITHUB_REPO",
+    "projectType": "github",
+    "projectBranch": "main"
+  },
+  "buildSettings": {
+    "dockerfile": {
+      "dockerFilePath": "/Dockerfile",
+      "dockerWorkDir": "/"
+    }
+  },
+  "deployment": {
+    "storage": { "ephemeralStorage": { "storageSize": 1024 } },
+    "docker": { "configType": "customCommand", "customCommand": "bin/production migrate" }
+  },
+  "runtimeEnvironment": {
+    "SHORTBREAD_APEX_HOST": "$DOMAIN",
+    "SHORTBREAD_BLOB_STORE": "r2"
+  },
+  "backoffLimit": 0,
+  "activeDeadlineSeconds": 600
+}
