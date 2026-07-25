@@ -22,9 +22,17 @@ type ResolutionFixture = {
   status: AnchorStatus
 }
 
+type OverlappingFixture = {
+  name: string
+  source: string
+  republished: string
+  anchors: Array<{ quote: string; occurrence: number; status: AnchorStatus }>
+}
+
 const here = dirname(fileURLToPath(import.meta.url))
 const fixtures = JSON.parse(readFileSync(join(here, 'conformance_fixtures.json'), 'utf8')) as {
   resolution: ResolutionFixture[]
+  overlapping: OverlappingFixture[]
 }
 
 const points = (text: string): string[] => Array.from(text)
@@ -103,6 +111,27 @@ test('a Comment on deleted text orphans rather than relocating onto an identical
 
   assert.equal(resolution.status, 'orphaned')
   assert.equal(resolution.startOffset, null)
+})
+
+test('overlapping Anchors on the same sentence each resolve independently', () => {
+  for (const fixture of fixtures.overlapping) {
+    for (const expected of fixture.anchors) {
+      const anchor = capture({
+        source: fixture.source,
+        startOffset: nthIndex(fixture.source, expected.quote, expected.occurrence),
+        length: points(expected.quote).length,
+        releaseNumber: 1,
+        path: 'index.html',
+      })
+      const resolution = resolve(anchor, fixture.republished)
+
+      assert.equal(resolution.status, expected.status, `${fixture.name}: ${expected.quote}`)
+      const found = points(fixture.republished)
+        .slice(resolution.startOffset ?? 0, resolution.endOffset ?? 0)
+        .join('')
+      assert.equal(found, expected.quote, `${fixture.name}: ${expected.quote} resolved onto different text`)
+    }
+  }
 })
 
 test('an empty quote is orphaned rather than matching everywhere', () => {

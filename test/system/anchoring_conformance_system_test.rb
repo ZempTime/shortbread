@@ -38,6 +38,23 @@ class AnchoringConformanceSystemTest < ApplicationSystemTestCase
     assert_empty divergences, divergence_report(divergences)
   end
 
+  # The PRD's named minimum for HTML: inline markup changes, added wrapper elements, and
+  # whole-document reformatting. Driven through the DOM extractor, because that is the one the
+  # browser actually runs and the one whose disagreement with Ruby breaks verification.
+  test "markup churn leaves the DOM extractor in agreement with Ruby" do
+    divergences = FIXTURES.fetch(:html_resolution).flat_map do |fixture|
+      [ fixture.fetch(:html), fixture.fetch(:republished_html) ].filter_map do |html|
+        from_browser = extract_in_browser(html)
+        from_ruby = Shortbread::Extraction.from_html(html).text
+        next if from_browser == from_ruby
+
+        { name: fixture.fetch(:name), expected: from_ruby, ruby: from_ruby, browser: from_browser }
+      end
+    end
+
+    assert_empty divergences, divergence_report(divergences)
+  end
+
   test "a live Selection captures the Anchor the Ruby extractor can verify" do
     html = "<h1>Deploy notes</h1><p>Every change <em>ships</em> behind a flag.</p>"
     quote = "ships behind a flag"

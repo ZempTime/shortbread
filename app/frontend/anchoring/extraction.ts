@@ -67,6 +67,15 @@ const breakBlock = (state: State): void => {
   if (state.text.length === 0) return
   if (state.text[state.text.length - 1] === '\n') return
 
+  // A block break absorbs the collapsed space before it. Whitespace between a word and the end of
+  // its block is not visible to a reader, so leaving it would make a reformatted document extract
+  // differently from a minified one and shift every offset after the break.
+  if (state.text[state.text.length - 1] === ' ') {
+    state.text.pop()
+    state.map.pop()
+  }
+  if (state.text.length === 0) return
+
   state.text.push('\n')
   // A synthesised break corresponds to a tag rather than to any selectable character. It is
   // anchored to the last real position so a selection landing here still maps somewhere sane.

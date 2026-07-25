@@ -45,6 +45,46 @@ class AnchoringConformanceTest < ActiveSupport::TestCase
     end
   end
 
+  # The PRD names these as minimum matrix coverage: markup churn must not disturb an Anchor,
+  # because the Anchor targets extracted visible text rather than the bytes around it.
+  test "markup changes that leave visible text alone do not disturb the anchor" do
+    FIXTURES.fetch(:html_resolution).each do |fixture|
+      text = Shortbread::Extraction.from_html(fixture.fetch(:html)).text
+      quote = fixture.fetch(:quote)
+      anchor = Shortbread::Anchoring.capture(
+        source: text, start_offset: nth_index(text, quote, fixture.fetch(:occurrence)),
+        length: quote.length, release_number: 1, path: "index.html"
+      )
+      republished = Shortbread::Extraction.from_html(fixture.fetch(:republished_html)).text
+
+      resolution = Shortbread::Anchoring.resolve(anchor, republished)
+
+      assert_equal fixture.fetch(:status).to_sym, resolution.status, fixture.fetch(:name)
+    end
+  end
+
+  test "overlapping Anchors on the same sentence each resolve independently" do
+    FIXTURES.fetch(:overlapping).each do |fixture|
+      source = fixture.fetch(:source)
+      republished = fixture.fetch(:republished)
+
+      fixture.fetch(:anchors).each do |expected|
+        quote = expected.fetch(:quote)
+        anchor = Shortbread::Anchoring.capture(
+          source:, start_offset: nth_index(source, quote, expected.fetch(:occurrence)),
+          length: quote.length, release_number: 1, path: "index.html"
+        )
+
+        resolution = Shortbread::Anchoring.resolve(anchor, republished)
+
+        assert_equal expected.fetch(:status).to_sym, resolution.status,
+          "#{fixture.fetch(:name)}: #{quote}"
+        assert_equal quote, republished[resolution.start_offset...resolution.end_offset],
+          "#{fixture.fetch(:name)}: #{quote} resolved onto different text"
+      end
+    end
+  end
+
   private
 
   def anchor_for(fixture)

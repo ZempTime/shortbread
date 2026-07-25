@@ -98,6 +98,14 @@ module Shortbread
     def break_block(state, index)
       return if state[:text].empty? || state[:text].end_with?("\n")
 
+      # A block break absorbs the collapsed space before it. Whitespace between a word and the end
+      # of its block is not visible to a reader, so leaving it would make a reformatted document
+      # extract differently from a minified one and shift every offset after the break.
+      if state[:text].end_with?(" ")
+        state[:text].chop!
+        state[:map].pop
+      end
+
       state[:text] << "\n"
       state[:map] << index
     end

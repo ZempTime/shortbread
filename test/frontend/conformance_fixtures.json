@@ -158,5 +158,75 @@
       "republished": "Name\nStatus\nfirst-site\npublished\nsecond-site\ndraft",
       "status": "exact"
     }
+  ],
+  "html_resolution": [
+    {
+      "name": "an inline tag change leaves the anchor exact",
+      "html": "<p>Every change <em>ships</em> behind a flag.</p>",
+      "quote": "ships behind a flag",
+      "occurrence": 0,
+      "republished_html": "<p>Every change <strong>ships</strong> behind a flag.</p>",
+      "status": "exact"
+    },
+    {
+      "name": "an added wrapper element leaves the anchor exact",
+      "html": "<p>Every change ships behind a flag.</p>",
+      "quote": "ships behind a flag",
+      "occurrence": 0,
+      "republished_html": "<div class=\"lede\"><p class=\"intro\">Every change ships behind a flag.</p></div>",
+      "status": "exact"
+    },
+    {
+      "name": "whole-document reformatting leaves the anchor exact",
+      "html": "<h1>Deploy notes</h1><p>Every change ships behind a flag.</p>",
+      "quote": "ships behind a flag",
+      "occurrence": 0,
+      "republished_html": "<h1>\n  Deploy notes\n</h1>\n\n<p>\n  Every change ships behind a flag.\n</p>\n",
+      "status": "exact"
+    },
+    {
+      "name": "editing the anchored sentence orphans it",
+      "html": "<h1>Deploy notes</h1><p>Every change ships behind a flag.</p>",
+      "quote": "ships behind a flag",
+      "occurrence": 0,
+      "republished_html": "<h1>Deploy notes</h1><p>Every change ships behind a toggle.</p>",
+      "status": "orphaned"
+    }
+  ],
+  "overlapping": [
+    {
+      "name": "two Anchors overlapping the same sentence both resolve",
+      "source": "Deploys are gated on review by two people.",
+      "anchors": [
+        {
+          "quote": "gated on review",
+          "occurrence": 0,
+          "status": "exact"
+        },
+        {
+          "quote": "on review by two",
+          "occurrence": 0,
+          "status": "exact"
+        }
+      ],
+      "republished": "Deploys are gated on review by two people."
+    },
+    {
+      "name": "overlapping Anchors survive an edit before them",
+      "source": "Deploys are gated on review by two people.",
+      "anchors": [
+        {
+          "quote": "gated on review",
+          "occurrence": 0,
+          "status": "moved"
+        },
+        {
+          "quote": "on review by two",
+          "occurrence": 0,
+          "status": "moved"
+        }
+      ],
+      "republished": "All deploys are gated on review by two people."
+    }
   ]
 }
