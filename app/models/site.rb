@@ -8,6 +8,7 @@ class Site < ApplicationRecord
   has_many :releases, dependent: :restrict_with_exception
   has_many :publish_plans, dependent: :restrict_with_exception
   has_many :release_rollbacks, dependent: :restrict_with_exception
+  has_many :comments, dependent: :destroy
 
   attr_readonly :slug
 

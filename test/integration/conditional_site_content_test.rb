@@ -29,7 +29,7 @@ class ConditionalSiteContentTest < ActionDispatch::IntegrationTest
 
       get "/", headers: { "If-None-Match" => %Q("#{"0" * 64}") }
       assert_response :ok
-      assert_equal content, response.body
+      assert_includes response.body, content
 
       grant.update!(revoked_at: Time.current)
       get "/", headers: { "If-None-Match" => %Q("#{etag}") }

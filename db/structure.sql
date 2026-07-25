@@ -278,6 +278,51 @@ ALTER SEQUENCE public.blobs_id_seq OWNED BY public.blobs.id;
 
 
 --
+-- Name: comments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.comments (
+    id bigint NOT NULL,
+    site_id bigint NOT NULL,
+    release_id bigint NOT NULL,
+    person_id bigint NOT NULL,
+    grant_id bigint NOT NULL,
+    body text NOT NULL,
+    path character varying,
+    quote text,
+    prefix text,
+    suffix text,
+    start_offset bigint,
+    block_index bigint,
+    block_offset bigint,
+    created_at timestamp(6) without time zone NOT NULL,
+    updated_at timestamp(6) without time zone NOT NULL,
+    CONSTRAINT comments_anchor_all_or_nothing CHECK ((((path IS NULL) AND (quote IS NULL) AND (prefix IS NULL) AND (suffix IS NULL) AND (start_offset IS NULL) AND (block_index IS NULL) AND (block_offset IS NULL)) OR ((path IS NOT NULL) AND (quote IS NOT NULL) AND (prefix IS NOT NULL) AND (suffix IS NOT NULL) AND (start_offset IS NOT NULL)))),
+    CONSTRAINT comments_body_present CHECK ((btrim(body) <> ''::text)),
+    CONSTRAINT comments_start_offset_non_negative CHECK (((start_offset IS NULL) OR (start_offset >= 0)))
+);
+
+
+--
+-- Name: comments_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.comments_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: comments_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.comments_id_seq OWNED BY public.comments.id;
+
+
+--
 -- Name: grants; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -363,7 +408,7 @@ CREATE TABLE public.manifest_entries (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT manifest_entries_byte_size_nonnegative CHECK ((byte_size >= 0)),
-    CONSTRAINT manifest_entries_offline_policy CHECK (((offline_policy)::text = ANY ((ARRAY['required'::character varying, 'optional'::character varying, 'download'::character varying])::text[])))
+    CONSTRAINT manifest_entries_offline_policy CHECK (((offline_policy)::text = ANY (ARRAY[('required'::character varying)::text, ('optional'::character varying)::text, ('download'::character varying)::text])))
 );
 
 
@@ -447,7 +492,7 @@ CREATE TABLE public.owner_credentials (
     created_at timestamp(6) without time zone NOT NULL,
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT owner_credentials_label_length CHECK (((octet_length((label)::text) >= 1) AND (octet_length((label)::text) <= 100))),
-    CONSTRAINT owner_credentials_material_length CHECK ((((octet_length(credential_id) >= 1) AND (octet_length(credential_id) <= 1366)) AND ((octet_length(public_key) >= 1) AND (octet_length(public_key) <= 16384)))),
+    CONSTRAINT owner_credentials_material_length CHECK (((octet_length(credential_id) >= 1) AND (octet_length(credential_id) <= 1366) AND ((octet_length(public_key) >= 1) AND (octet_length(public_key) <= 16384)))),
     CONSTRAINT owner_credentials_sign_count_nonnegative CHECK ((sign_count >= 0)),
     CONSTRAINT owner_credentials_transports_array CHECK (((jsonb_typeof(transports) = 'array'::text) AND (transports <@ '["ble", "hybrid", "internal", "nfc", "smart-card", "usb"]'::jsonb) AND (jsonb_array_length(transports) <= 6)))
 );
@@ -556,7 +601,7 @@ CREATE TABLE public.publish_plans (
     updated_at timestamp(6) without time zone NOT NULL,
     CONSTRAINT publish_plans_idempotency_key_digest_format CHECK (((idempotency_key_digest)::text ~ '^[0-9a-f]{64}$'::text)),
     CONSTRAINT publish_plans_manifest_sha256_format CHECK (((manifest_sha256)::text ~ '^[0-9a-f]{64}$'::text)),
-    CONSTRAINT publish_plans_state CHECK (((state)::text = ANY ((ARRAY['open'::character varying, 'finalized'::character varying])::text[])))
+    CONSTRAINT publish_plans_state CHECK (((state)::text = ANY (ARRAY[('open'::character varying)::text, ('finalized'::character varying)::text])))
 );
 
 
@@ -737,6 +782,13 @@ ALTER TABLE ONLY public.blobs ALTER COLUMN id SET DEFAULT nextval('public.blobs_
 
 
 --
+-- Name: comments id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments ALTER COLUMN id SET DEFAULT nextval('public.comments_id_seq'::regclass);
+
+
+--
 -- Name: grants id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -834,6 +886,14 @@ ALTER TABLE ONLY public.ar_internal_metadata
 
 ALTER TABLE ONLY public.blobs
     ADD CONSTRAINT blobs_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: comments comments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
 
 
 --
@@ -952,6 +1012,41 @@ CREATE UNIQUE INDEX index_blobs_on_sha256 ON public.blobs USING btree (sha256);
 --
 
 CREATE UNIQUE INDEX index_blobs_on_storage_key ON public.blobs USING btree (storage_key);
+
+
+--
+-- Name: index_comments_on_grant_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_grant_id ON public.comments USING btree (grant_id);
+
+
+--
+-- Name: index_comments_on_person_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_person_id ON public.comments USING btree (person_id);
+
+
+--
+-- Name: index_comments_on_release_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_release_id ON public.comments USING btree (release_id);
+
+
+--
+-- Name: index_comments_on_site_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_site_id ON public.comments USING btree (site_id);
+
+
+--
+-- Name: index_comments_on_site_id_and_created_at; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_comments_on_site_id_and_created_at ON public.comments USING btree (site_id, created_at);
 
 
 --
@@ -1172,6 +1267,13 @@ CREATE TRIGGER shortbread_finalized_current_release BEFORE INSERT OR UPDATE OF c
 
 
 --
+-- Name: comments shortbread_immutable_change; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER shortbread_immutable_change BEFORE UPDATE ON public.comments FOR EACH ROW EXECUTE FUNCTION public.shortbread_reject_immutable_row_change();
+
+
+--
 -- Name: release_rollbacks shortbread_immutable_change; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -1207,6 +1309,14 @@ CREATE TRIGGER shortbread_release_lifecycle BEFORE INSERT OR DELETE OR UPDATE ON
 
 
 --
+-- Name: comments fk_comments_release_same_site; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT fk_comments_release_same_site FOREIGN KEY (release_id, site_id) REFERENCES public.releases(id, site_id);
+
+
+--
 -- Name: publish_plans fk_publish_plans_base_release_same_site; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -1228,6 +1338,14 @@ ALTER TABLE ONLY public.publish_plans
 
 ALTER TABLE ONLY public.releases
     ADD CONSTRAINT fk_rails_00f1523b8e FOREIGN KEY (site_id) REFERENCES public.sites(id);
+
+
+--
+-- Name: comments fk_rails_0ababf4328; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT fk_rails_0ababf4328 FOREIGN KEY (person_id) REFERENCES public.people(id);
 
 
 --
@@ -1295,11 +1413,27 @@ ALTER TABLE ONLY public.owner_credentials
 
 
 --
+-- Name: comments fk_rails_9d2977d5af; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT fk_rails_9d2977d5af FOREIGN KEY (site_id) REFERENCES public.sites(id);
+
+
+--
 -- Name: publish_plans fk_rails_9f72463588; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.publish_plans
     ADD CONSTRAINT fk_rails_9f72463588 FOREIGN KEY (release_id) REFERENCES public.releases(id);
+
+
+--
+-- Name: comments fk_rails_a41fb62be6; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.comments
+    ADD CONSTRAINT fk_rails_a41fb62be6 FOREIGN KEY (grant_id) REFERENCES public.grants(id);
 
 
 --
@@ -1365,6 +1499,7 @@ ALTER TABLE ONLY public.sites
 SET search_path TO "$user", public;
 
 INSERT INTO "schema_migrations" (version) VALUES
+('20260725120000'),
 ('20260720122000'),
 ('20260720121000'),
 ('20260720120000'),
@@ -1374,3 +1509,4 @@ INSERT INTO "schema_migrations" (version) VALUES
 ('20260719142000'),
 ('20260719141000'),
 ('20260719140000');
+

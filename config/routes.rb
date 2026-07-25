@@ -7,11 +7,15 @@ Rails.application.routes.draw do
   get "invitations/:locator", to: "invitation_previews#show"
   post "invitations/:locator/accept", to: "invitation_acceptances#create"
   post "_shortbread/session", to: "site_sessions#create"
+  post "_shortbread/comments", to: "comments#create"
+  get "_shortbread/comments", to: "comments#index"
+  get "_shortbread/review.js", to: "review_surfaces#show", format: false, defaults: { format: "js" }
   get "/", to: "site_contents#show"
 
   namespace :api do
     namespace :v1 do
       resources :sites, only: :create, param: :slug do
+        resource :feedback, only: :show, controller: "feedback"
         resources :publish_plans, only: :create, path: "publish-plans"
         resources :releases, only: :index, param: :number do
           post :rollback, on: :member, controller: "release_rollbacks", action: :create
@@ -35,4 +39,7 @@ Rails.application.routes.draw do
     get "health/ready" => "runtime_health_checks#ready"
   end
   get "up", to: ->(_environment) { Shortbread::RackResponses.not_found }
+
+  # Declared last so it cannot shadow the apex-host, API, or health routes above.
+  get "/*path", to: "site_contents#show", format: false, as: :site_content
 end

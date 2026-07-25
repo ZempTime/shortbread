@@ -73,6 +73,7 @@ func execute(ctx context.Context, args []string, runtime Runtime, deps dependenc
 	root.AddCommand(newInviteCommand(runtime, &server, &jsonOutput, deps))
 	root.AddCommand(newPublishCommand(runtime, &server, &jsonOutput))
 	root.AddCommand(newReleasesCommand(runtime, &server, &jsonOutput))
+	root.AddCommand(newFeedbackCommand(runtime, &server, &jsonOutput))
 	root.SetArgs(args)
 	root.SetOut(stdout)
 	root.SetErr(io.Discard)

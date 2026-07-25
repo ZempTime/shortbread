@@ -3,6 +3,7 @@
 class Release < ApplicationRecord
   belongs_to :site
   has_many :manifest_entries, dependent: :restrict_with_exception
+  has_many :comments, dependent: :restrict_with_exception
   has_many :rollbacks_from,
     class_name: "ReleaseRollback",
     foreign_key: :from_release_id,

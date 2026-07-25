@@ -1,6 +1,14 @@
 # NOTE FROM THE AUTHOR:
 
 this repo is a big experiment in trying and using different AI methodologies to ship things.
+it's more a sensemaking expedition than anything, with a (hopefully) simple and usable idea at the end.
+there isn't much structure here. just vibes, and "I wonder how legible this approach might be"
+
+some things I tried:
+- ICP / "self-harness"
+- Codex 5.6 ultra mode
+- Matt Pocock skills
+- Opus 5
 
 # Shortbread
 
@@ -55,7 +63,8 @@ Shortbread is server-private, not zero-knowledge. Saved offline copies may survi
 - stable isolated `<slug>.sites.<apex>` Site origins;
 - immutable content-addressed Releases with rollback;
 - Viewer-controlled atomic Offline Copies;
-- flat Release/path-anchored Comments and Owner-only View Receipts;
+- a review surface where a Viewer selects text and leaves a range-anchored Comment, pulled back through `shortbread feedback pull`;
+- flat Release-scoped Comments and Owner-only View Receipts;
 - Rails 8.1 + Inertia/React/TypeScript app and a single-binary Go CLI;
 - no CMS, build pipeline, anonymous public links, notification system, analytics, or product-controlled AI.
 

@@ -153,16 +153,6 @@ module Publishing
   end
 
   def valid_path?(path)
-    return false unless path.is_a?(String) && path.present? && path.valid_encoding? && path.ascii_only?
-    return false if path.start_with?("/") || path.include?("\\") || path.include?("\0")
-
-    segments = path.split("/", -1)
-    return false if segments.any? { |segment| segment.empty? || segment == "." || segment == ".." }
-    return false unless segments.all? { |segment| segment.match?(/\A[A-Za-z0-9][A-Za-z0-9._-]*\z/) }
-    return false if segments.any? { |segment| segment == ".env" || segment.start_with?(".env.") }
-    return false if segments.first == "_shortbread"
-    return false if path == "service-worker.js"
-
-    true
+    Shortbread::ManifestPaths.valid?(path)
   end
 end

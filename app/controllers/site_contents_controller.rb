@@ -1,38 +1,29 @@
 # frozen_string_literal: true
 
 class SiteContentsController < ActionController::Base
+  include SiteAuthenticated
+
   def show
-    host = Shortbread::Hosts.parse(host: request.host, scheme: request.scheme, port: request.port)
-    return not_found unless host.kind == :site
+    return not_found unless authenticate_site!
 
-    site = Site.find_by(slug: host.site_slug)
-    return not_found unless site
+    manifest_path = Shortbread::ManifestPaths.normalize(params[:path])
+    return not_found unless manifest_path
 
-    authenticate!(host:, site:)
-    entry = current_index(site)
+    entry = current_entry(current_site, manifest_path)
     return not_found unless entry
 
     serve(entry)
   rescue Shortbread::Hosts::InvalidHost, SiteSession::Rejected,
-    Shortbread::BlobStore::ContentMismatch, Shortbread::BlobStore::StorageFailure
+    Shortbread::BlobStore::ContentMismatch, Shortbread::BlobStore::StorageFailure,
+    ActiveRecord::ConnectionNotEstablished, ActiveRecord::StatementInvalid
     not_found
   end
 
   private
 
-  def authenticate!(host:, site:)
-    secure = request.ssl?
-    SiteSession.authenticate(
-      token: cookies[SiteSession.cookie_name(secure:)],
-      audience: host.site_origin,
-      site:,
-      now: Time.current
-    )
-  end
-
-  def current_index(site)
+  def current_entry(site, manifest_path)
     release = site.current_release
-    release&.manifest_entries&.includes(:blob)&.find_by(path: "index.html")
+    release&.manifest_entries&.includes(:blob)&.find_by(path: manifest_path)
   end
 
   def serve(entry)
@@ -41,16 +32,37 @@ class SiteContentsController < ActionController::Base
       sha256: entry.blob.sha256,
       byte_size: entry.byte_size
     )
+    reviewable = reviewable?(entry)
+    body = if reviewable
+      ReviewSurface.inject(
+        io.read.force_encoding(Encoding::UTF_8),
+        release_number: entry.release.number
+      )
+    end
+
     response.headers["Content-Type"] = entry.content_type
-    response.headers["Content-Length"] = entry.byte_size.to_s
+    # The ETag stays the Blob digest: the Release is content-addressed to the uploaded bytes, and
+    # the review surface is a property of this response rather than of the stored content.
+    response.headers["Content-Length"] = (reviewable ? body.bytesize : entry.byte_size).to_s
     response.headers["ETag"] = %Q("#{entry.blob.sha256}")
     response.headers["Cache-Control"] = "no-store"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.status = :ok
-    self.response_body = request.head? ? [] : chunked_body(io)
-    io = nil unless request.head?
+
+    if request.head?
+      self.response_body = []
+    elsif reviewable
+      self.response_body = [ body ]
+    else
+      self.response_body = chunked_body(io)
+      io = nil
+    end
   ensure
     io&.close
+  end
+
+  def reviewable?(entry)
+    entry.content_type.split(";").first.to_s.strip.casecmp?("text/html")
   end
 
   def chunked_body(io)
