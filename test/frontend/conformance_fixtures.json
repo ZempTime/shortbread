@@ -1,0 +1,162 @@
+{
+  "comment": "The shared conformance matrix. Both the Ruby and TypeScript anchoring implementations are driven over these cases and must report identical resolution states. This file is the deliverable the PRD calls the mechanism that keeps client and server in agreement; it is read by test/lib/shortbread/anchoring_conformance_test.rb and test/frontend/anchoring.test.ts.",
+  "extraction": [
+    {
+      "name": "collapses whitespace the way a browser renders it",
+      "html": "<h1>Deploy   notes</h1>\n<p>Every change ships\nbehind a flag.</p>",
+      "text": "Deploy notes\nEvery change ships behind a flag."
+    },
+    {
+      "name": "breaks on a closing block tag so trailing whitespace cannot survive",
+      "html": "<h1>Title</h1>\n  <p>Body</p>",
+      "text": "Title\nBody"
+    },
+    {
+      "name": "omits invisible elements entirely",
+      "html": "<style>p { color: red }</style><script>var x = 1;</script><p>Visible</p>",
+      "text": "Visible"
+    },
+    {
+      "name": "emits CSS-hidden text, because visibility is never consulted",
+      "html": "<p>Before</p><div style=\"display:none\">Hidden</div><p>After</p>",
+      "text": "Before\nHidden\nAfter"
+    },
+    {
+      "name": "treats whitespace inside pre as content",
+      "html": "<pre>line one\n    indented</pre>",
+      "text": "line one\n    indented"
+    },
+    {
+      "name": "keeps a nested inline boundary invisible to the text",
+      "html": "<p>Every change <em>ships</em> behind a flag.</p>",
+      "text": "Every change ships behind a flag."
+    },
+    {
+      "name": "counts an astral character as one code point",
+      "html": "<p>Ship 😀 it.</p><p>The build must stay green.</p>",
+      "text": "Ship 😀 it.\nThe build must stay green."
+    }
+  ],
+  "resolution": [
+    {
+      "name": "unchanged reload resolves exact",
+      "source": "Deploys are gated on review.\nEvery change ships behind a flag.\nRetries are capped at three attempts.",
+      "quote": "Retries are capped",
+      "occurrence": 0,
+      "republished": "Deploys are gated on review.\nEvery change ships behind a flag.\nRetries are capped at three attempts.",
+      "status": "exact"
+    },
+    {
+      "name": "an unrelated earlier passage edited so everything shifts",
+      "source": "Deploys are gated on review.\nEvery change ships behind a flag.\nRetries are capped at three attempts.",
+      "quote": "Retries are capped at three attempts",
+      "occurrence": 0,
+      "republished": "Deploys are gated on review by two people.\nEvery change ships behind a flag.\nRetries are capped at three attempts.",
+      "status": "moved"
+    },
+    {
+      "name": "the anchored text itself edited",
+      "source": "Deploys are gated on review.\nEvery change ships behind a flag.",
+      "quote": "ships behind a flag",
+      "occurrence": 0,
+      "republished": "Deploys are gated on review.\nEvery change ships behind a toggle.",
+      "status": "orphaned"
+    },
+    {
+      "name": "the anchored text deleted while an identical string survives elsewhere",
+      "source": "Section one.\nThe build must stay green.\nSection two.\nThe build must stay green.\nSection three.",
+      "quote": "The build must stay green",
+      "occurrence": 1,
+      "republished": "Section one.\nThe build must stay green.\nSection two.\nSection three.",
+      "status": "orphaned"
+    },
+    {
+      "name": "a string repeated within one document, disambiguated by context",
+      "source": "Alpha notes. The build must stay green. Alpha ends.\nBeta notes. The build must stay green. Beta ends.",
+      "quote": "The build must stay green",
+      "occurrence": 1,
+      "republished": "Alpha notes, revised for clarity. The build must stay green. Alpha ends.\nBeta notes. The build must stay green. Beta ends.",
+      "status": "moved"
+    },
+    {
+      "name": "indistinguishable repeats within one block refuse to guess",
+      "source": "go go go go and stop.",
+      "quote": "go",
+      "occurrence": 1,
+      "republished": "Preface line.\ngo go go and stop.",
+      "status": "ambiguous"
+    },
+    {
+      "name": "reordered blocks keep the anchor on its own text",
+      "source": "First paragraph here.\nSecond paragraph here.\nThird paragraph here.",
+      "quote": "Second paragraph here",
+      "occurrence": 0,
+      "republished": "Third paragraph here.\nFirst paragraph here.\nSecond paragraph here.",
+      "status": "moved"
+    },
+    {
+      "name": "an anchor on a heading survives an edit far below its context window",
+      "source": "Deploy notes\nEvery change ships behind a flag.\nRetries are capped at three attempts.",
+      "quote": "Deploy notes",
+      "occurrence": 0,
+      "republished": "Deploy notes\nEvery change ships behind a flag.\nRetries are capped at five attempts.",
+      "status": "exact"
+    },
+    {
+      "name": "a heading whose context window reaches into an edit reports partial corroboration",
+      "source": "Deploy notes\nEvery change ships behind a flag.",
+      "quote": "Deploy notes",
+      "occurrence": 0,
+      "republished": "Deploy notes\nEvery change ships behind a documented flag.",
+      "status": "moved"
+    },
+    {
+      "name": "a quote absent from the republished document is orphaned",
+      "source": "Deploys are gated on review.",
+      "quote": "gated on review",
+      "occurrence": 0,
+      "republished": "Everything ships straight to production.",
+      "status": "orphaned"
+    },
+    {
+      "name": "an astral character earlier in the document does not desync the anchor",
+      "source": "Ship 😀 it.\nThe build must stay green.",
+      "quote": "The build must stay green",
+      "occurrence": 0,
+      "republished": "Ship 😀 it.\nThe build must stay green.",
+      "status": "exact"
+    },
+    {
+      "name": "an astral character inserted earlier shifts the anchor by code points",
+      "source": "Ship it.\nThe build must stay green.",
+      "quote": "The build must stay green",
+      "occurrence": 0,
+      "republished": "Ship 😀😀 it.\nThe build must stay green.",
+      "status": "moved"
+    },
+    {
+      "name": "an anchor inside a code block survives an indent change that keeps its own line",
+      "source": "Run the installer.\ndef provision(site)\n  site.releases.create!\nend",
+      "quote": "  site.releases.create!",
+      "occurrence": 0,
+      "republished": "Run the installer.\ndef provision(site)\n    site.releases.create!\nend",
+      "status": "moved"
+    },
+    {
+      "name": "an anchor inside a code block orphans when the line itself is rewritten",
+      "source": "Run the installer.\ndef provision(site)\n  site.releases.create!\nend",
+      "quote": "  site.releases.create!",
+      "occurrence": 0,
+      "republished": "Run the installer.\ndef provision(site)\n  site.publish!\nend",
+      "status": "orphaned"
+    },
+    {
+      "name": "an anchor on a table cell resolves exact when the row is untouched",
+      "source": "Name\nStatus\nfirst-site\npublished\nsecond-site\ndraft",
+      "quote": "published",
+      "occurrence": 0,
+      "republished": "Name\nStatus\nfirst-site\npublished\nsecond-site\ndraft",
+      "status": "exact"
+    }
+  ]
+}
