@@ -35,4 +35,7 @@ Rails.application.routes.draw do
     get "health/ready" => "runtime_health_checks#ready"
   end
   get "up", to: ->(_environment) { Shortbread::RackResponses.not_found }
+
+  # Declared last so it cannot shadow the apex-host, API, or health routes above.
+  get "/*path", to: "site_contents#show", format: false, as: :site_content
 end

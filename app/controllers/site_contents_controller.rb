@@ -9,7 +9,10 @@ class SiteContentsController < ActionController::Base
     return not_found unless site
 
     authenticate!(host:, site:)
-    entry = current_index(site)
+    manifest_path = Shortbread::ManifestPaths.normalize(params[:path])
+    return not_found unless manifest_path
+
+    entry = current_entry(site, manifest_path)
     return not_found unless entry
 
     serve(entry)
@@ -30,9 +33,9 @@ class SiteContentsController < ActionController::Base
     )
   end
 
-  def current_index(site)
+  def current_entry(site, manifest_path)
     release = site.current_release
-    release&.manifest_entries&.includes(:blob)&.find_by(path: "index.html")
+    release&.manifest_entries&.includes(:blob)&.find_by(path: manifest_path)
   end
 
   def serve(entry)
