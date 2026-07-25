@@ -15,6 +15,7 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :sites, only: :create, param: :slug do
+        resource :feedback, only: :show, controller: "feedback"
         resources :publish_plans, only: :create, path: "publish-plans"
         resources :releases, only: :index, param: :number do
           post :rollback, on: :member, controller: "release_rollbacks", action: :create
