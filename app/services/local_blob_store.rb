@@ -6,10 +6,7 @@ require "pathname"
 require "tempfile"
 
 class LocalBlobStore
-  CHUNK_SIZE = 64 * 1024
-
-  class ContentMismatch < StandardError; end
-  class StorageFailure < StandardError; end
+  include Shortbread::BlobStore
 
   def initialize(root: ENV.fetch("SHORTBREAD_BLOB_ROOT", Rails.root.join("tmp", "blob-store")))
     @root = Pathname(root)
