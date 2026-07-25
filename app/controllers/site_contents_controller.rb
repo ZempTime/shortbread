@@ -66,7 +66,7 @@ class SiteContentsController < ActionController::Base
   end
 
   def blob_store
-    @blob_store ||= LocalBlobStore.new
+    @blob_store ||= Shortbread::BlobStores.build
   end
 
   def not_found

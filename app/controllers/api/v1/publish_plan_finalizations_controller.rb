@@ -7,7 +7,7 @@ module Api
         publish_plan = PublishPlan.find_by(id: params[:id])
         return render_error("publish_plan_not_found", :not_found) unless publish_plan
 
-        result = Publishing.finalize(publish_plan:, blob_store: LocalBlobStore.new)
+        result = Publishing.finalize(publish_plan:, blob_store: Shortbread::BlobStores.build)
         release = result.release
         render json: {
           release: {

@@ -5,7 +5,7 @@ require "uri"
 
 module Shortbread
   class ProductionRuntime
-    REQUIRED_KEYS = %w[
+    BASE_REQUIRED_KEYS = %w[
       ANYCABLE_HTTP_BROADCAST_URL
       ANYCABLE_RPC_HOST
       ANYCABLE_SECRET
@@ -15,9 +15,25 @@ module Shortbread
       RAILS_ENV
       SECRET_KEY_BASE
       SHORTBREAD_APEX_HOST
-      SHORTBREAD_BLOB_ROOT
     ].freeze
-    SECRET_KEYS = %w[ANYCABLE_SECRET DATABASE_URL QUEUE_DATABASE_URL SECRET_KEY_BASE].freeze
+    LOCAL_BLOB_STORE_KEYS = %w[SHORTBREAD_BLOB_ROOT].freeze
+    R2_BLOB_STORE_KEYS = %w[
+      SHORTBREAD_R2_ACCESS_KEY_ID
+      SHORTBREAD_R2_BUCKET
+      SHORTBREAD_R2_ENDPOINT
+      SHORTBREAD_R2_SECRET_ACCESS_KEY
+    ].freeze
+    BLOB_STORES = { "local" => LOCAL_BLOB_STORE_KEYS, "r2" => R2_BLOB_STORE_KEYS }.freeze
+    DEFAULT_BLOB_STORE = "local"
+    REQUIRED_KEYS = (BASE_REQUIRED_KEYS + LOCAL_BLOB_STORE_KEYS).freeze
+    SECRET_KEYS = %w[
+      ANYCABLE_SECRET
+      DATABASE_URL
+      QUEUE_DATABASE_URL
+      SECRET_KEY_BASE
+      SHORTBREAD_R2_ACCESS_KEY_ID
+      SHORTBREAD_R2_SECRET_ACCESS_KEY
+    ].freeze
     DEVELOPMENT_SECRETS = %w[anycable-local-secret shortbread-development-only].freeze
     POSTGRESQL_EXTERNAL_IDENTITY_QUERY_KEYS = %w[dbname service].freeze
     HOST_PATTERN = /\A(?=.{1,253}\z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\z/
@@ -28,14 +44,24 @@ module Shortbread
       @environment = environment
     end
 
+    def blob_store
+      selection = @environment["SHORTBREAD_BLOB_STORE"].to_s
+      selection.empty? ? DEFAULT_BLOB_STORE : selection
+    end
+
     def validate!
-      missing = REQUIRED_KEYS.select { |key| @environment[key].to_s.empty? }
+      unless BLOB_STORES.key?(blob_store)
+        raise InvalidConfiguration,
+          "invalid production configuration: SHORTBREAD_BLOB_STORE must be one of #{BLOB_STORES.keys.join(', ')}"
+      end
+
+      missing = required_keys.select { |key| @environment[key].to_s.empty? }
       raise InvalidConfiguration, "missing production configuration: #{missing.sort.join(', ')}" if missing.any?
 
       invalid = []
       invalid << "RAILS_ENV must equal production" unless @environment.fetch("RAILS_ENV") == "production"
       invalid << "SHORTBREAD_APEX_HOST must be a lowercase hostname without scheme or port" unless valid_host?
-      invalid << "SHORTBREAD_BLOB_ROOT must be an absolute path" unless Pathname(@environment.fetch("SHORTBREAD_BLOB_ROOT")).absolute?
+      invalid.concat(blob_store_violations)
       invalid << "SECRET_KEY_BASE must contain at least 32 characters" unless valid_secret?("SECRET_KEY_BASE")
       invalid << "ANYCABLE_SECRET must contain at least 32 characters and must not use a development value" unless valid_anycable_secret?
       invalid << "DATABASE_URL must be a PostgreSQL URL selecting a database" unless valid_postgresql_url?("DATABASE_URL")
@@ -53,7 +79,7 @@ module Shortbread
     end
 
     def inventory
-      REQUIRED_KEYS.to_h do |key|
+      required_keys.to_h do |key|
         value = @environment[key].to_s
         rendered = if value.empty?
           "[missing]"
@@ -67,6 +93,31 @@ module Shortbread
     end
 
     private
+
+    def required_keys
+      BASE_REQUIRED_KEYS + BLOB_STORES.fetch(blob_store, LOCAL_BLOB_STORE_KEYS)
+    end
+
+    def blob_store_violations
+      case blob_store
+      when "local"
+        return [] if Pathname(@environment.fetch("SHORTBREAD_BLOB_ROOT")).absolute?
+
+        [ "SHORTBREAD_BLOB_ROOT must be an absolute path" ]
+      when "r2"
+        return [] if valid_r2_endpoint?
+
+        [ "SHORTBREAD_R2_ENDPOINT must be an HTTPS URL without userinfo, query, or fragment" ]
+      else
+        []
+      end
+    end
+
+    def valid_r2_endpoint?
+      uri = URI.parse(@environment.fetch("SHORTBREAD_R2_ENDPOINT"))
+      uri.scheme == "https" && uri.host && !uri.host.empty? &&
+        uri.userinfo.nil? && uri.query.nil? && uri.fragment.nil?
+    end
 
     def valid_host?
       @environment.fetch("SHORTBREAD_APEX_HOST").match?(HOST_PATTERN)

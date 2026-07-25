@@ -27,7 +27,7 @@ module Api
       private
 
       def blob_store
-        @blob_store ||= LocalBlobStore.new
+        @blob_store ||= Shortbread::BlobStores.build
       end
 
       def persist_blob!(entry:, storage_key:)
