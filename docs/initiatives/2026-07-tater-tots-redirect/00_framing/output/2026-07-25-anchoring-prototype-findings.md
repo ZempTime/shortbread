@@ -2,8 +2,10 @@
 
 **Date:** 2026-07-25
 **Type:** throwaway prototype (LOGIC branch of the `prototype` skill). No production code written.
-**Code:** `tmp/prototype-anchoring/` — `anchoring.rb` (pure module), `tui.rb` (throwaway shell),
-`sweep.rb` / `probe.rb` (evidence harnesses). `tmp/` is gitignored; see "Capturing this" below.
+**Code:** `tmp/prototype-anchoring/` — `anchoring.rb` (resolution core) and `extract.rb`
+(HTML/markdown → visible text) are the portable modules; `tui.rb` is a throwaway shell; `sweep.rb`,
+`probe.rb`, `html_sweep.rb`, `scenarios.rb`, `html_scenarios.rb` are evidence harnesses.
+`tmp/` is gitignored; see "Capturing this" below.
 
 **Question:** when a reviewer selects text inside a published document and comments on it, how is
 that selection stored so it still points at the right text later — and what happens when the
@@ -19,7 +21,9 @@ errors, and one of them was the exact plannotator failure reproduced in my own f
 1. **Release-scoped, not carry-forward** — annotations belong to the Release they were made on;
    continuity comes from a diff view. See "Decision: Release-scoped" below.
 2. **HTML Releases are in v1**, anchoring to *extracted visible text* rather than source bytes.
-   This is **not yet validated** — see "Open: extracted-text anchoring" below.
+   Subsequently **validated** against markup churn — see "Extracted-text anchoring" below.
+3. **Anchoring is computed on both client and server**, deliberately duplicated across TypeScript
+   and Ruby, because the CLI feedback path has no browser.
 
 ---
 
@@ -35,9 +39,8 @@ Anchor = Struct.new(
 )
 ```
 
-Four resolution states, all first-class in the data model:
-
-Within its own Release, an anchor resolves to place the highlight. Against a *later* Release, the
+Four resolution states, all first-class in the data model. Within its own Release, an anchor
+resolves to place the highlight. Against a *later* Release, the
 same resolution runs to classify the comment for the diff view:
 
 | status | meaning | within its own Release | in the Release N→N+1 diff view |
@@ -68,8 +71,8 @@ the previous conversation their edit invalidated.
 ### Source, not rendered HTML — for markdown Releases
 
 > Scoped by the later decision to support HTML Releases in v1. This section's conclusion holds
-> for **markdown** Releases. For prebuilt HTML Releases there is no separate source layer, and
-> the chosen approach is extracted-text anchoring — unvalidated, see "Open" below.
+> for **markdown** Releases. For prebuilt HTML Releases there is no separate source layer; the
+> approach there is extracted-text anchoring, validated below.
 
 Confirmed for markdown. Anchors point at the markdown **source** bytes, matching what the Release
 is content-addressed to. `Release#manifest_sha256` + `ManifestEntry#path` → `Blob#sha256` already
@@ -223,20 +226,99 @@ highlight placement is Release-bound.
 
 ---
 
+## Extracted-text anchoring for HTML Releases — validated
+
+HTML Releases are in v1. Their Blob *is* the HTML, so there is no source layer to anchor to. The
+approach is to anchor to **extracted visible text plus context**, making markup invisible to the
+anchor. Markdown is extracted the same way, so both document kinds land in one text space and the
+validated resolution core serves both unchanged.
+
+**Result: the bet holds.** `extract.rb` + `html_sweep.rb`, 9 selections × 8 scenarios against a
+prebuilt HTML fixture. Markup-only scenarios must resolve `exact`/`moved`, since the visible text
+did not change.
+
+| scenario | result |
+| --- | --- |
+| Byte-identical republish | all 9 `EXACT` 1.00 |
+| `<em>` → `<strong>` | all 9 `EXACT` 1.00 |
+| Classes + wrapper divs added | all 9 `EXACT` 1.00 |
+| Whole document minified | 8/9 `EXACT` 1.00 — one failure, below |
+| Entities introduced (`&mdash;`) | all 9 resolved, `MOVED` (text genuinely shifted) |
+| Content changes (edit / delete / expand) | behaved as in the markdown sweep |
+
+Specifically confirmed:
+
+- **Selections spanning tag boundaries survive.** Selection (d) crosses an `<em>`, (e) *is* the
+  emphasised word, (i) spans a `<p>` into an `<h2>`. All resolve `EXACT` through markup churn.
+  This was the main risk in extracted-text anchoring and it did not materialise.
+- **The text-offset → source-offset map round-trips.** Every extracted offset points back at the
+  identical bytes in the original HTML, so an anchor stored in text space can still be verified
+  against the content-addressed Blob.
+- **`<script>`, `<style>` and `<title>` never leak into the extracted text.**
+
+### The one failure: code blocks vs. reformatting
+
+A comment inside a `<pre>` block **orphans when the document is minified**. The extractor
+preserves whitespace inside `<pre>` (correct — browsers do), but minification rewrites the `<pre>`
+contents too, so `def provision(site)\n  site.releases…` becomes `def provision(site)
+site.releases…`. The surrounding context genuinely changed, so `orphaned` is the *correct*
+verdict — but it means **code-block comments are materially more fragile than prose comments**
+against a generator or formatter change. Prose survives reformatting because the extractor already
+collapses whitespace there; `<pre>` opts out of that protection by design.
+
+Not a blocker, and not a bug to fix in the anchor. It is a property to know about, and it argues
+for the whitespace-normalization follow-up being scoped to *include* a decision about `<pre>`.
+
+### Where this runs: both client and server
+
+**Decided.** `Anchoring` + `Extract` are implemented twice — once in TypeScript, once in Ruby —
+because the two callers have genuinely different needs:
+
+| operation | where | why |
+| --- | --- | --- |
+| Reviewer selects text → capture anchor | **client** | only the browser knows what was visible and selected |
+| Store the anchor | **server** | it is part of an append-only Comment |
+| Resolve for display within one Release | **client** | no round trip needed |
+| Resolve for the Release N→N+1 diff view | **server** | needs both Releases' bytes |
+| Resolve for `shortbread feedback pull` | **server** | no browser exists in the CLI path |
+
+The CLI path is what makes server-side resolution non-optional: `feedback pull` is a Go client
+hitting the HTTP API, and without server-side resolution it can report *what* was said but not
+*where*. Server-side resolution is also what lets an anchor be **verified** against the immutable
+Blob rather than trusted — the property that distinguishes this from plannotator's model.
+
+The duplication is a real cost. It is bounded by the modules being small and pure (~200 lines, no
+I/O), and the sweep harnesses are the shared conformance suite: both implementations must produce
+identical statuses across the same fixture matrix.
+
+**Not yet decided:** whether the server resolves eagerly at publish time or lazily on read. Lazy
+fits Release-scoped well — nothing needs resolving until someone opens the diff view or pulls
+feedback — and avoids a publish-time pass entirely.
+
 ## What I did NOT test
 
-- **Real markdown rendering or a browser.** No DOM, no selection API, no projection of a source
-  anchor into rendered HTML. The projection direction is argued above but **not empirically
-  verified** — it is the obvious next prototype, and it is where a browser-side surprise would
-  live (e.g. selections that span rendered elements mapping back to non-contiguous source).
-- **Prebuilt HTML Releases.** This prototype assumed markdown source throughout. HTML Releases
-  were subsequently put in v1 scope; the approach is described under "Open" below and is **not
-  validated**. This is the largest outstanding risk in the model.
+- **A real browser.** Still the largest gap. Extraction and resolution were validated against HTML
+  *strings* in Ruby, not against a live DOM. What remains untested is the capture side: a real
+  `Selection`/`Range` from a reviewer dragging across rendered content, mapped back to an offset
+  in the extracted text. The string-level evidence is encouraging — selections spanning tag and
+  block boundaries resolve correctly — but a browser can still surprise here (shadow DOM,
+  `white-space` CSS altering what "visible text" means, content injected by script after load).
+- **A real HTML parser.** `extract.rb` is a hand-rolled scanner, not a parser. It handles the
+  fixture's tags, entities, `<pre>`, and skip-elements, but has no story for malformed markup,
+  CDATA, SVG/MathML, or `<template>`. A production extractor would use a real parser, and its
+  output would need to be re-validated against this same sweep.
+- **Client/server extractor agreement.** The decision to compute in both places means a Ruby and a
+  TypeScript extractor must produce **byte-identical** text and offset maps, or anchors captured
+  in the browser will not resolve on the server. Nothing tests this yet; the sweep matrix is the
+  natural conformance suite.
 - **Unicode, multi-byte, and grapheme clusters.** All offsets are Ruby character offsets over
   ASCII fixtures. Emoji, combining characters, and CRLF will need explicit decisions.
-- **Whitespace normalization.** Anchors are byte-exact. A reformat (rewrapping prose, changing
-  indentation) will orphan comments that a whitespace-normalized comparison would have kept.
-  Probably the single highest-value follow-up.
+- **Whitespace normalization — partially resolved.** For HTML this is now handled: the extractor
+  collapses whitespace the way a browser renders it, which is why minification left 8 of 9 anchors
+  intact. Two pieces remain: (a) **markdown** anchors are still byte-exact, so rewrapping prose
+  will orphan them — markdown should probably get the same collapsing treatment; (b) **`<pre>`
+  content deliberately opts out** of collapsing, which is why the one minification failure landed
+  there. Scoping this follow-up must include an explicit decision for code blocks.
 - **Performance.** `all_occurrences` is a naive scan per anchor. Fine for plans; unmeasured on
   large documents with many comments.
 - **Concurrency, persistence, auth, threading model.** Out of scope by design — no database, no
@@ -245,31 +327,6 @@ highlight placement is Release-bound.
   where it breaks.
 
 ---
-
-## Open: extracted-text anchoring for HTML Releases
-
-HTML Releases are in v1. Their Blob *is* the HTML, so there is no source layer to anchor to. The
-chosen approach is to anchor to **extracted visible text plus context** — markup invisible to the
-anchor, so `<em>` becoming `<strong>` or a class being added leaves it intact.
-
-If markdown is *also* extracted to visible text, both document kinds land in one text space and
-the validated resolution core serves both unchanged. That is the appeal, and it is the reason to
-prefer it over raw HTML byte offsets (where a selection spanning a tag puts markup inside the
-quote, and any reformat orphans everything).
-
-**None of this is validated.** A partial extractor exists at `tmp/prototype-anchoring/extract.rb`
-on the prototype branch; it was written but never exercised. The open questions:
-
-1. Does extracted text stay stable across realistic markup churn — reformatting, wrapper divs,
-   changed classes, a different generator version?
-2. Does the text-offset → source-offset map survive well enough to verify an anchor against the
-   content-addressed Blob?
-3. What does a reviewer's DOM selection map back to when it spans element boundaries?
-4. Whitespace collapsing is doing real work in the extractor. How much does that widen or narrow
-   the whitespace-normalization problem noted above?
-
-Question 3 needs a browser and is the UI-branch prototype the original findings called for.
-Questions 1, 2 and 4 can be answered with the existing terminal harness.
 
 ## Boundaries honoured
 
@@ -281,6 +338,12 @@ Nothing renamed (Tater Tots deferred). Shortbread v1 ticket graph untouched. Voc
 
 `tmp/` is gitignored, so the prototype is currently local-only. Per the `prototype` skill it
 should be committed to a throwaway branch as a primary source, with a pointer left on the
-implementation issue. The validated piece to lift later is `Anchoring` — the Struct plus
-`capture` / `resolve` / `carry_forward` are pure and portable; `tui.rb`, `sweep.rb`, and
-`probe.rb` are shell and should not survive.
+implementation issue. Branch: **`prototype/anchoring-2026-07-25`**.
+
+The pieces to lift later are `Anchoring` (the Struct plus `capture` / `resolve` — **not**
+`carry_forward`, which the Release-scoped decision drops) and `Extract` (visible-text extraction
+plus the offset map). Both are pure and portable, and both need a TypeScript twin.
+
+`tui.rb` is shell and should not survive. The harnesses (`sweep.rb`, `html_sweep.rb`, and their
+fixture files) **should** survive in some form — they are the conformance suite that keeps the
+Ruby and TypeScript implementations in agreement.
