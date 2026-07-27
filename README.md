@@ -10,6 +10,14 @@ some things I tried:
 - Matt Pocock skills
 - Opus 5
 
+# Second note from the author
+
+I'm declaring this project a complete failure. This was a brief, accelerated experiment at trying a couple different dark factory patterns.
+
+I was skeptical but this confirms it for me first-hand: I don't believe AI models can make good software without a human in the loop.
+
+This repo is dead, I still need this project but I'm going to attempt it with a new set of tools. Mainly, pi and plannotator. In a differnt repo, under a different name.
+
 # Shortbread
 
 Private little websites for the people you choose.
